@@ -115,10 +115,10 @@ maak_figuur(data_plas, componenten_veld, "_veld_labo")
 # democode: boxplots per variabele
 afzonderlijke figuren per variabele
 ```{r warning=FALSE}
-Componenten <- unique(data_lang$AquaComponent) 
+Componenten <- unique(data$AquaComponent) 
 
 for (i in Componenten) { 
-  data_figuur <- data_lang %>% 
+  data_figuur <- data %>% 
     filter(str_detect(AquaComponent, i)) 
   figuur <- ggplot(data_figuur, 
                    aes(x = FieldSampleID, y = ResultCalc)) + 
@@ -127,7 +127,8 @@ for (i in Componenten) {
     labs(title = paste0(data_figuur$label))
   print(figuur)
   ggsave(figuur, 
-         filename = paste0("../exports/plot_meetreeks_", naam,"_", i,".jpg"), 
+         filename = paste0("./exports/plot_meetreeks_", "naam","_", i,".jpg"), 
          dpi = 200, width = 10, height = 10)
 }
+# geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
 ```
