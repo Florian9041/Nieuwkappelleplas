@@ -105,10 +105,12 @@ toepassing van deze functie
 plot_NO3 <- maak_figuur(nitraten, "NO3", "nitraat")
 plot_pH_R <- maak_figuur(data_R, "pH_labo", "pH")
 plot_pH_ZP <- maak_figuur(data_ZP, "pH_labo", "pH")
+
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
                                        "pH_tit", "pH_veld")
-maak_figuur(data_plas, componenten_veld, "_veld_labo")
+maak_figuur(data, componenten_veld, "_veld_labo")
+# geeft figuur met alle variabelen van veldmetingen per maand (! 2 metingen per maand voor O2verz !)
 ```
 
 
