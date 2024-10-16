@@ -41,6 +41,8 @@ library(dplyr)
 ```{r }
 data <- read.csv2("./data/AC_NKP_ruwe_data_lang_2024-10-15.csv")
 data$FieldSamplingDate <- as.Date(data$FieldSamplingDate)
+data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
+data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
 ```
 
 # figuren
@@ -52,6 +54,7 @@ label: als titel
 
 ```{r}
 MKN_norm = 0.05 # vul hier MKN-norm in voor de te onderzoeken stof(fen)
+titel_figuur = ""
 
 # iets in deze vorm:
 figuur <- data %>% 
@@ -59,7 +62,8 @@ figuur <- data %>%
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
     geom_line() +
     geom_point() +
-  geom_hline(yintercept = MKN_norm)
+  geom_hline(yintercept = MKN_norm) +
+  labs(title = titel_figuur)
 figuur
 
 ```
@@ -99,7 +103,8 @@ maak_figuur <- function(dataset, component, naam){
 toepassing van deze functie
 ```{r}
 plot_NO3 <- maak_figuur(nitraten, "NO3", "nitraat")
-
+plot_pH_R <- maak_figuur(data_R, "pH_labo", "pH")
+plot_pH_ZP <- maak_figuur(data_ZP, "pH_labo", "pH")
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
                                        "pH_tit", "pH_veld")
