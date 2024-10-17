@@ -44,6 +44,31 @@ data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
 data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
 ```
 
+# gemiddeldes, maximum, minimum per variabele per zone
+```{r}
+# voor zonnepaneelzone (_ZP)
+data_ZP_stat <- data_ZP %>%
+  group_by(AquaComponent) %>%
+  summarise(
+    gem = mean(ResultCalc),
+    min = min(ResultCalc),
+    max = max(ResultCalc),
+    p10 = quantile(ResultCalc, probs = 0.1),
+    p90 = quantile(ResultCalc, probs = 0.9)
+  )
+
+# voor randzone (_R)
+data_R_stat <- data_R %>%
+  group_by(AquaComponent) %>%
+  summarise(
+    gem = mean(ResultCalc),
+    min = min(ResultCalc),
+    max = max(ResultCalc),
+    p10 = quantile(ResultCalc, probs = 0.1),
+    p90 = quantile(ResultCalc, probs = 0.9)
+  )
+```
+
 # figuren
 
 per staalnamelocatie: alle gemeten variabelen met aanduiding van MKN richtwaarden (indien opgegeven) in figuur zetten
@@ -53,40 +78,54 @@ label: als titel
 
 ```{r}
 # vul hier MKN-norm in voor de te onderzoeken stof(fen)
-## voorbeeld Czb (circumneutraal, zwak gebufferd)
+## watertype Awe - Nieuwkappelleplas
+MKN_O2conc = 6 # mg O2/L - 10p
+MKN_02verz = 120 # % - maximum
 MKN_TN = 1.3 # mg/L - zomerhalfjaargem
-MKN_TP = 0.03 # mg/L - zomerhalfjaargem
-MKN_doorzicht = 0.9 # m - zomerhalfjaargem
-MKN_EC = 250 # µS/cm (20°C) - 90p
-MKN_Cl = 50 # mg/L - gemiddelde
-MKN_Sulfaat = 40 # mg/L - gemiddelde
+MKN_TP = 0.055 # mg/L - zomerhalfjaargem
+MKN_doorzicht = 1.8 # m - zomerhalfjaargem
+MKN_EC = 750 # µS/cm (20°C) - 90p
+MKN_Cl = 140 # mg/L - gemiddelde
+MKN_Sulfaat = 100 # mg/L - gemiddelde
 MKN_temp = 25 # °C - maximum
-titel_figuur = ""
+titel_figuur = "Chloride-concentratie NKP"
+naam_variabele = "Chloride (mg/L)"
+naam_tijdsreeks = "Datum staalname"
 
-# iets in deze vorm:
+# figuur met 2 trendlijnen (1 voor ZP, 1 voor R)
 figuur <- data %>% 
     filter(AquaComponent == "Cl") %>% 
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
     geom_line() +
     geom_point() +
-  geom_hline(yintercept = MKN_Cl, colour = "red") +
-  labs(title = titel_figuur)
+  geom_hline(yintercept = MKN_Cl, colour = "blue") +
+  geom_hline(yintercept = data_ZP_stat$gem[data_ZP_stat$AquaComponent == "Cl"], color = "lightblue") +
+  geom_hline(yintercept = data_R_stat$gem[data_R_stat$AquaComponent == "Cl"], color = "tomato2") +
+  labs(title = titel_figuur)  + xlab(naam_tijdsreeks) + ylab(naam_variabele) +
+    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
 figuur
 
-# voor pH (met minimum en maximum)
-MKN_pH_min = 5.5  # vul minimum pH in
-MKN_pH_max = 7.5  # vul maximum pH in
+## pH - watertype Awe (met minimum en maximum)
+MKN_pH_min = 6.5  # vul minimum pH in
+MKN_pH_max = 8.5  # vul maximum pH in
 titel_figuur = ""
 
-figuur2 <- data %>% 
+## figuur 
+figuur2a <- data %>% 
     filter(AquaComponent == "pH_veld") %>% 
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
     geom_line() +
     geom_point() +
   geom_hline(yintercept = MKN_pH_max, colour = "red") +
   geom_hline(yintercept = MKN_pH_min, colour = "red") +
+  geom_hline(yintercept = data_ZP_stat$min[data_ZP_stat$AquaComponent == "pH_veld"], color = "lightblue") +
+  geom_hline(yintercept = data_ZP_stat$max[data_ZP_stat$AquaComponent == "pH_veld"], color = "lightblue") +
+  geom_hline(yintercept = data_R_stat$min[data_R_stat$AquaComponent == "pH_veld"], color = "tomato2") +
+  geom_hline(yintercept = data_R_stat$max[data_R_stat$AquaComponent == "pH_veld"], color = "tomato2") +
   labs(title = titel_figuur)
-figuur2
+figuur2a
+
+
 ```
 
 Alle N-variabelen cumulatief in figuur zetten (Nitriet, nitraat, ammonium, OrgN = TN)
