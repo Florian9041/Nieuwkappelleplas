@@ -88,7 +88,7 @@ MKN_EC = 750 # µS/cm (20°C) - 90p
 MKN_Cl = 140 # mg/L - gemiddelde
 MKN_Sulfaat = 100 # mg/L - gemiddelde
 MKN_temp = 25 # °C - maximum
-titel_figuur = "Chloride-concentratie NKP"
+titel_figuur = "Chloride-concentratie NKP (+ gemiddelde)"
 naam_variabele = "Chloride (mg/L)"
 naam_tijdsreeks = "Datum staalname"
 
@@ -194,3 +194,9 @@ for (i in Componenten) {
 }
 # geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
 ```
+
+# chlorofyl en zwevende stof
+```{r}
+
+```
+
