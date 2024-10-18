@@ -34,6 +34,7 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(inbodb)
+library(gridExtra)
 ```
 
 # import
@@ -148,7 +149,7 @@ functie: maak figuur, laat deze zien en sla ze op
 ```{r}
 maak_figuur <- function(dataset, component, naam){
   figuur <- dataset %>% 
-    filter(AquaComponent %in% component) %>% 
+    filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
@@ -195,8 +196,21 @@ for (i in Componenten) {
 # geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
 ```
 
-# chlorofyl en zwevende stof
+# chlorofyl, zwevende stof & doorzicht
 ```{r}
+# maak_figuur creeërt figuren, geen plots, dus grid.arrange werkt niet
+plotchloroZP <- maak_figuur(data_ZP, "chl_a", "chlorofyl_a_ZP")
+plotchloroR <- maak_figuur(data_R, "chl_a", "chlorofyl_a_R")
 
+# maak plots en combineer
+titel_figuur = "chlorofyl & secchi-diepte"
+plot_helderheid <- data %>% 
+    filter(AquaComponent == c("chl_a", "SD_veld")) %>% group_by(AquaComponent) %>%
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
+    geom_line() +
+    geom_point() +
+  labs(title = titel_figuur)  +
+    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+plot_helderheid
 ```
 
