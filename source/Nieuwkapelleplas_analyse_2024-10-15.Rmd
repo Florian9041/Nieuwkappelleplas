@@ -198,19 +198,29 @@ for (i in Componenten) {
 
 # chlorofyl, zwevende stof & doorzicht
 ```{r}
-# maak_figuur creeërt figuren, geen plots, dus grid.arrange werkt niet
-plotchloroZP <- maak_figuur(data_ZP, "chl_a", "chlorofyl_a_ZP", "")
-plotchloroR <- maak_figuur(data_R, "chl_a", "chlorofyl_a_R")
+# hernoem chl_a van randzone naar chl_a_rand
+data$AquaComponent[data$FieldSampleID == "WVLDIK0133_R" & data$AquaComponent == "chl_a"] <- "chl_a_rand"
 
-# maak plots en combineer
-titel_figuur = "chlorofyl & secchi-diepte"
+# hernoem chl_a van zonnepaneelzone nar chl_a_zp
+data$AquaComponent[data$FieldSampleID == "WVLDIK0133_ZP" & data$AquaComponent == "chl_a"] <- "chl_a_zp"
+
+```
+
+```{r}
+# maak figuur
+titel_figuur = "Parameters helderheid waterkolom"
 plot_helderheid <- data %>% 
-    filter(AquaComponent == c("chl_a", "SD_veld", "ZS_105", "ZS_550")) %>% group_by(AquaComponent) %>%
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
+    filter(AquaComponent %in% c("chl_a_rand", "chl_a_zp", "SD_veld", "ZS_105")) %>% group_by(AquaComponent) %>%
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent)) + 
     geom_line() +
     geom_point() +
   labs(title = titel_figuur)  +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  geom_line()+
+  scale_color_discrete(labels = c("chlorofyl_rand (µg/L)", "chlorofyl_zonnepaneel (µg/L)", "Secchi-diepte (m)", "zwevende stof (mg/L)")) + labs(color = "Variabele", x = "Datum", y = "Meetwaarde")  + theme(legend.position = c(0.15,0.7), legend.key.size = unit(2, "cm"))
 plot_helderheid
+
+# via functie?
+#maak_figuur(data, data$AquaComponent %in% c("chl_a_rand", "chl_a_zp", #"SD_veld", "ZS_105"), "helderheid", "Helderheid waterkolom")
 ```
 
