@@ -147,14 +147,14 @@ nitraten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2
 # democode functie 'maak_figuur' 
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
-maak_figuur <- function(dataset, component, naam){
-  figuur <- dataset %>% 
+maak_figuur <- function(dataset, component, naam, title = NULL){
+  figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
-    labs(title = "")
+    labs(title = title)
   print(figuur)
   ggsave(plot = figuur,
          filename = paste0("./exports/NKP_", naam, ".jpg"), width = 9, height = 6)
@@ -170,7 +170,7 @@ plot_pH_ZP <- maak_figuur(data_ZP, "pH_labo", "pH")
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
                                        "pH_tit", "pH_veld")
-maak_figuur(data, componenten_veld, "_veld")
+maak_figuur(data, componenten_veld, "veld", "Variabelen veldmeting Nieuwkappelleplas")
 # geeft figuur met alle variabelen van veldmetingen per maand (! 2 metingen per maand voor O2verz !)
 ```
 
@@ -199,13 +199,13 @@ for (i in Componenten) {
 # chlorofyl, zwevende stof & doorzicht
 ```{r}
 # maak_figuur creeërt figuren, geen plots, dus grid.arrange werkt niet
-plotchloroZP <- maak_figuur(data_ZP, "chl_a", "chlorofyl_a_ZP")
+plotchloroZP <- maak_figuur(data_ZP, "chl_a", "chlorofyl_a_ZP", "")
 plotchloroR <- maak_figuur(data_R, "chl_a", "chlorofyl_a_R")
 
 # maak plots en combineer
 titel_figuur = "chlorofyl & secchi-diepte"
 plot_helderheid <- data %>% 
-    filter(AquaComponent == c("chl_a", "SD_veld")) %>% group_by(AquaComponent) %>%
+    filter(AquaComponent == c("chl_a", "SD_veld", "ZS_105", "ZS_550")) %>% group_by(AquaComponent) %>%
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
     geom_line() +
     geom_point() +
