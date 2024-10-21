@@ -35,6 +35,7 @@ library(ggplot2)
 library(dplyr)
 library(inbodb)
 library(gridExtra)
+library(ggpubr)
 ```
 
 # import
@@ -135,11 +136,13 @@ Aandeel van gemeten vennen voldoet aan MKN-normen (voor alle variabelen)
 ```{r}
 # subset met nitraten (NO2, NO3, NH4)
 nitraten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N"))
-
+nutriënten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N", "TP"))
+nutriënten_R <- subset(nutriënten, FieldSampleID == "WVLDIK0133_R")
+nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
 # cumulatieve som van nitraten per LabSampleID = TN / Totale stikstof
-  cumsum <- nitraten %>%
+nitraten <- nitraten %>%
   group_by(LabSampleID, FieldSampleID ,FieldSamplingDate) %>%
-  summarise(TN = sum(ResultCalc))
+  mutate(TN = sum(ResultCalc))
 ```
 
 
@@ -147,6 +150,7 @@ nitraten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2
 # democode functie 'maak_figuur' 
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
+# genereer plot en sla op
 maak_figuur <- function(dataset, component, naam, title = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
@@ -158,6 +162,18 @@ maak_figuur <- function(dataset, component, naam, title = NULL){
   print(figuur)
   ggsave(plot = figuur,
          filename = paste0("./exports/NKP_", naam, ".jpg"), width = 9, height = 6)
+}
+
+# puur om plot te genereren
+maak_plot <- function(dataset, component, title = NULL){
+  figuur <- dataset %>%
+    filter(AquaComponent %in% component) %>%  
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
+    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
+    geom_line() +
+    geom_point() +
+    labs(title = title)
+  figuur
 }
 ```
 
@@ -217,10 +233,27 @@ plot_helderheid <- data %>%
   labs(title = titel_figuur)  +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   geom_line()+
-  scale_color_discrete(labels = c("chlorofyl_rand (µg/L)", "chlorofyl_zonnepaneel (µg/L)", "Secchi-diepte (m)", "zwevende stof (mg/L)")) + labs(color = "Variabele", x = "Datum", y = "Meetwaarde")  + theme(legend.position = c(0.15,0.7), legend.key.size = unit(2, "cm"))
-plot_helderheid
+  scale_color_discrete(labels = c("chlorofyl_rand (µg/L)", "chlorofyl_zonnepaneel (µg/L)", "Secchi-diepte (m)", "zwevende stof (g/L)")) + labs(color = "Variabele", x = "Datum", y = "Meetwaarde (log10)")  + theme(legend.key.size = unit(2, "cm"))
+plot_helderheid + scale_y_continuous(trans = "log10")
 
-# via functie?
-#maak_figuur(data, data$AquaComponent %in% c("chl_a_rand", "chl_a_zp", #"SD_veld", "ZS_105"), "helderheid", "Helderheid waterkolom")
+# legende binnen grafiek
+## legend.position = c(0.15,0.7), 
+
+# figuren zij aan zij
+#maak_plot()
 ```
 
+# nutriëntenlast
+```{r}
+# TP data toevoegen aan cumsum-dataset
+## converteer nutrienten van long naar wide dataformat voor merge met cumsum
+
+
+# met dataset nutriënten (zie hoger)
+Nutr_R <- maak_plot(nutriënten_R, nutriënten_R$AquaComponent, "Nutriënten_randzone")
+Nutr_ZP <- maak_plot(nutriënten_ZP, nutriënten_ZP$AquaComponent, "Nutriënten_zonnepanelen")
+ggarrange(Nutr_R, Nutr_ZP, nrow = 1, common.legend = TRUE, legend = "right") + geom_line(data = cumsum, aes(x = FieldSamplingDate, y = TN))
+
+#
+
+```
