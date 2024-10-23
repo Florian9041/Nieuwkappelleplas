@@ -141,7 +141,7 @@ nutriënten_R <- subset(nutriënten, FieldSampleID == "WVLDIK0133_R")
 nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
 # cumulatieve som van nitraten per LabSampleID = TN / Totale stikstof
 nitraten <- nitraten %>%
-  group_by(LabSampleID, FieldSampleID ,FieldSamplingDate) %>%
+  group_by(FieldSamplingDate, FieldSampleID) %>%
   mutate(TN = sum(ResultCalc))
 ```
 
@@ -245,9 +245,23 @@ plot_helderheid + scale_y_continuous(trans = "log10")
 
 # nutriëntenlast
 ```{r}
-# TP data toevoegen aan cumsum-dataset
-## converteer nutrienten van long naar wide dataformat voor merge met cumsum
+# TP data
+TP <- data %>%
+  filter(AquaComponent == "TP") %>%
+  select(FieldSampleID, FieldSamplingDate, ResultCalc, label) %>% rename("TP" = ResultCalc)
+# TN = som van nitraten
+TN <- data %>% filter(AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N")) %>%
+  group_by(FieldSamplingDate, FieldSampleID) %>%
+  summarise(TN = sum(ResultCalc))
 
+Totalen_N_P <- left_join(TN, TP, by = c("FieldSamplingDate", "FieldSampleID"))
+
+
+## converteer nutrienten van long naar wide dataformat voor merge met cumsum
+nitraten <- nitraten %>%
+  select(FieldSampleID, FieldSamplingDate, ResultCalc, label) %>%
+  group_by(FieldSamplingDate, FieldSampleID) %>%
+  mutate(TN = sum(ResultCalc))
 
 # met dataset nutriënten (zie hoger)
 Nutr_R <- maak_plot(nutriënten_R, nutriënten_R$AquaComponent, "Nutriënten_randzone")
