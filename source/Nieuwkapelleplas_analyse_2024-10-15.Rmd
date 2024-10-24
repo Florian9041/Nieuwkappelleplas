@@ -40,10 +40,13 @@ library(ggpubr)
 
 # import
 ```{r }
-data <- read.csv2("./data/AC_NKP_ruwe_data_lang_2024-10-15.csv")
-data$FieldSamplingDate <- as.Date(data$FieldSamplingDate)
+# data met manuele toevoeging T.N (som van NO2, NO3, NH4 en _N)
+data <- read.csv2("./data/data_NKP.csv", sep = ",")
+data$ResultCalc <- as.numeric(data$ResultCalc)
+data$FieldSamplingDate <- as.Date(data$FieldSamplingDate, format = "%d/%m/%Y")
 data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
 data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
+
 ```
 
 # gemiddeldes, maximum, minimum per variabele per zone
@@ -136,13 +139,9 @@ Aandeel van gemeten vennen voldoet aan MKN-normen (voor alle variabelen)
 ```{r}
 # subset met nitraten (NO2, NO3, NH4)
 nitraten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N"))
-nutriënten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N", "TP"))
+nutriënten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N", "TP", "TN"))
 nutriënten_R <- subset(nutriënten, FieldSampleID == "WVLDIK0133_R")
 nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
-# cumulatieve som van nitraten per LabSampleID = TN / Totale stikstof
-nitraten <- nitraten %>%
-  group_by(FieldSamplingDate, FieldSampleID) %>%
-  mutate(TN = sum(ResultCalc))
 ```
 
 
@@ -151,37 +150,48 @@ nitraten <- nitraten %>%
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
 # genereer plot en sla op
-maak_figuur <- function(dataset, component, naam, title = NULL){
+maak_figuur <- function(dataset, component, naam, title = NULL, xas = NULL, yas = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
-    labs(title = title)
+    labs(title = title) + xlab(xas) + ylab(yas)
   print(figuur)
   ggsave(plot = figuur,
          filename = paste0("./exports/NKP_", naam, ".jpg"), width = 9, height = 6)
 }
 
 # puur om plot te genereren
-maak_plot <- function(dataset, component, title = NULL){
+maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
-    labs(title = title)
+    labs(title = title) + xlab(xas) + ylab(yas)
   figuur
 }
 ```
 
 toepassing van deze functie
 ```{r}
-plot_NO3 <- maak_figuur(nitraten, "NO3", "nitraat")
-plot_pH_R <- maak_figuur(data_R, "pH_labo", "pH")
-plot_pH_ZP <- maak_figuur(data_ZP, "pH_labo", "pH")
+# zuurtegraad
+plot_pH_R <- maak_plot(data_R, "pH_labo", "Zuurtegraad randzone")
+plot_pH_ZP <- maak_plot(data_ZP, "pH_labo", "Zuurtegraad zonnepanelen")
+ggarrange(plot_pH_R, plot_pH_ZP, ncol = 2, nrow = 1, common.legend = TRUE, legend = FALSE)
+
+# nitraat
+plot_NO3_R <- maak_plot(data_R, "NO3", "Nitraat_randzone", yas = "mg/L")
+plot_NO3_ZP <- maak_plot(data_ZP, "NO3", "Nitraat_zonnepanelen", yas = "mg/L")
+ggarrange(plot_NO3_R, plot_NO3_ZP, ncol = 2, nrow = 1, common.legend = TRUE, legend = FALSE)
+
+# secchi-diepte
+plot_secchi_R <- maak_plot(data_R, "SD_veld", "Secchi-diepte randzone", yas = "helderheid (m)")
+plot_secchi_ZP <- maak_plot(data_ZP, "SD_veld", "Secchi-diepte zonnepanelen", yas = "helderheid (m)")
+ggarrange(plot_secchi_R, plot_secchi_ZP, ncol = 2, nrow = 1, legend = FALSE)
 
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
@@ -256,18 +266,12 @@ TN <- data %>% filter(AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N"
 
 Totalen_N_P <- left_join(TN, TP, by = c("FieldSamplingDate", "FieldSampleID"))
 
-
-## converteer nutrienten van long naar wide dataformat voor merge met cumsum
-nitraten <- nitraten %>%
-  select(FieldSampleID, FieldSamplingDate, ResultCalc, label) %>%
-  group_by(FieldSamplingDate, FieldSampleID) %>%
-  mutate(TN = sum(ResultCalc))
-
 # met dataset nutriënten (zie hoger)
 Nutr_R <- maak_plot(nutriënten_R, nutriënten_R$AquaComponent, "Nutriënten_randzone")
 Nutr_ZP <- maak_plot(nutriënten_ZP, nutriënten_ZP$AquaComponent, "Nutriënten_zonnepanelen")
 ggarrange(Nutr_R, Nutr_ZP, nrow = 1, common.legend = TRUE, legend = "right") + geom_line(data = cumsum, aes(x = FieldSamplingDate, y = TN))
 
 #
+
 
 ```
