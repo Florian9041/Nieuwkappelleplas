@@ -49,6 +49,16 @@ data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
 
 ```
 
+# neem gemiddelde waarde tussen randzone en zonnepanelen-zone
+```{r}
+combitabel <- bind_rows(data_ZP, data_R)
+combitabel <- combitabel %>%
+  group_by(FieldSamplingDate, AquaComponent, label) %>%
+  summarise(combo = mean(ResultCalc)) %>%
+  select(FieldSamplingDate, AquaComponent, combo, label)
+```
+
+
 # gemiddeldes, maximum, minimum per variabele per zone
 ```{r}
 # voor zonnepaneelzone (_ZP)
@@ -223,57 +233,42 @@ for (i in Componenten) {
 ```
 
 # chlorofyl, zwevende stof & doorzicht
-```{r}
-# hernoem chl_a van randzone naar chl_a_rand
-data$AquaComponent[data$FieldSampleID == "WVLDIK0133_R" & data$AquaComponent == "chl_a"] <- "chl_a_rand"
-
-# hernoem chl_a van zonnepaneelzone nar chl_a_zp
-data$AquaComponent[data$FieldSampleID == "WVLDIK0133_ZP" & data$AquaComponent == "chl_a"] <- "chl_a_zp"
-
-```
 
 ```{r}
 # maak figuur
-titel_figuur = "Parameters helderheid waterkolom"
-plot_helderheid <- data %>% 
-    filter(AquaComponent %in% c("chl_a_rand", "chl_a_zp", "SD_veld", "ZS_105")) %>% group_by(AquaComponent) %>%
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent)) + 
-    geom_line() +
-    geom_point() +
-  labs(title = titel_figuur)  +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  geom_line()+
-  scale_color_discrete(labels = c("chlorofyl_rand (µg/L)", "chlorofyl_zonnepaneel (µg/L)", "Secchi-diepte (m)", "zwevende stof (g/L)")) + labs(color = "Variabele", x = "Datum", y = "Meetwaarde (log10)")  + theme(legend.key.size = unit(2, "cm"))
-plot_helderheid + scale_y_continuous(trans = "log10")
+p1 <- data_R %>%
+  filter(AquaComponent %in% c("chl_a", "SD_veld", "ZS_105")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
+  geom_line() +
+  geom_point() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Helderheid waterkolom randzone") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (log10)")  + 
+  scale_color_discrete("Variabelen") +
+  scale_y_log10()
+p1
 
-# legende binnen grafiek
-## legend.position = c(0.15,0.7), 
-
+p2 <- data_ZP %>%
+  filter(AquaComponent %in% c("chl_a", "SD_veld", "ZS_105")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
+  geom_line() +
+  geom_point() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Helderheid waterkolom zonnepanelen") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (log10)")  + 
+  scale_color_discrete("Variabelen") +
+  scale_y_log10()
+p2
 # figuren zij aan zij
-#maak_plot()
+ggarrange(p1, p2, nrow = 1, common.legend = TRUE)
 ```
 
 # nutriëntenlast
 ```{r}
-# TP data
-TP <- data %>%
-  filter(AquaComponent == "TP") %>%
-  select(FieldSampleID, FieldSamplingDate, ResultCalc, label) %>% rename("TP" = ResultCalc)
-# TN = som van nitraten
-TN <- data %>% filter(AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N")) %>%
-  group_by(FieldSamplingDate, FieldSampleID) %>%
-  summarise(TN = sum(ResultCalc))
-
-Totalen_N_P <- left_join(TN, TP, by = c("FieldSamplingDate", "FieldSampleID"))
-
-# met dataset nutriënten (zie hoger)
-Nutr_R <- maak_plot(nutriënten_R, nutriënten_R$AquaComponent, "Nutriënten_randzone")
-Nutr_ZP <- maak_plot(nutriënten_ZP, nutriënten_ZP$AquaComponent, "Nutriënten_zonnepanelen")
-ggarrange(Nutr_R, Nutr_ZP, nrow = 1, common.legend = TRUE, legend = "right") + geom_line(data = cumsum, aes(x = FieldSamplingDate, y = TN))
-
-# Nutriënten randzone
-plot_Nutrienten_R <- nutriënten_R %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent)) + 
+plot_Nutrienten <- nutriënten %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent, linetype = FieldSampleID)) + 
   geom_line() + 
   geom_point() +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
@@ -281,23 +276,83 @@ plot_Nutrienten_R <- nutriënten_R %>%
   xlab("Datum staalname") + 
   ylab("Meetwaarde (mg/L)")  + 
   scale_color_discrete("Variabelen")
-plot_Nutrienten_R
+plot_Nutrienten
+```
 
-# Nutriënten zonnepanelen
-plot_Nutrienten_ZP <- nutriënten_ZP %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent)) + 
+## cumulatieve plot stikstof en fosfor
+```{r}
+# Voor TN
+cum_TN_R <- nutriënten_R %>%
+  filter(AquaComponent == "TN") %>%
+  arrange(FieldSamplingDate) %>%
+  mutate(CumulativeSum = cumsum(ResultCalc))
+
+cum_TN_ZP <- nutriënten_ZP %>%
+  filter(AquaComponent == "TN") %>%
+  arrange(FieldSamplingDate) %>%
+  mutate(CumulativeSum = cumsum(ResultCalc))
+
+p1 <- ggplot(data = cum_TN_R, aes(x = FieldSamplingDate, y = CumulativeSum)) + 
+  geom_line(color = "orange") + 
+  geom_point(color = "orange") +
+  labs(title = "Cumulatieve plot totale stikstof randzone",
+       x = "Datum staalname",
+       y = "Cumulatieve som van meetwaarde (mg/L)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+
+p2 <- ggplot(data = cum_TN_ZP, aes(x = FieldSamplingDate, y = CumulativeSum)) + 
+  geom_line(color = "orange") + 
+  geom_point(color = "orange") +
+  labs(title = "Cumulatieve plot totale stikstof zonnepanelen",
+       x = "Datum staalname",
+       y = "Cumulatieve som van meetwaarde (mg/L)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+
+ggarrange(p1, p2, nrow = 1)
+
+# voor TP
+cum_TP_R <- nutriënten_R %>%
+  filter(AquaComponent == "TP") %>%
+  arrange(FieldSamplingDate) %>%
+  mutate(CumulativeSum = cumsum(ResultCalc))
+
+cum_TP_ZP <- nutriënten_ZP %>%
+  filter(AquaComponent == "TP") %>%
+  arrange(FieldSamplingDate) %>%
+  mutate(CumulativeSum = cumsum(ResultCalc))
+
+p3 <- ggplot(data = cum_TP_R, aes(x = FieldSamplingDate, y = CumulativeSum)) + 
+  geom_line(color = "orange") + 
+  geom_point(color = "orange") +
+  labs(title = "Cumulatieve plot totale fosfor randzone",
+       x = "Datum staalname",
+       y = "Cumulatieve som van meetwaarde (mg/L)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+
+p4 <- ggplot(data = cum_TP_ZP, aes(x = FieldSamplingDate, y = CumulativeSum)) + 
+  geom_line(color = "orange") + 
+  geom_point(color = "orange") +
+  labs(title = "Cumulatieve plot totale fosfor zonnepanelen",
+       x = "Datum staalname",
+       y = "Cumulatieve som van meetwaarde (mg/L)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+
+ggarrange(p3, p4, nrow = 1)
+```
+
+# zuurstof
+```{r}
+p1 <- data %>%
+  filter(AquaComponent %in% c("O2_veld", "O2verz")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent, linetype = FieldSampleID)) +
   geom_line() + 
   geom_point() +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Nutriëntenlast zonnepanelen") +
+  labs(title = "Zuurstofgehalte waterkolom zonnepanelen") +
   xlab("Datum staalname") + 
-  ylab("Meetwaarde (mg/L)") + 
-  scale_color_discrete("Variabelen")
-plot_Nutrienten_ZP
-
-# Vergelijking rand vs. zonnepanelen
-plot_verg_nutr <- ggarrange(plot_Nutrienten_R, plot_Nutrienten_ZP, nrow = 1, common.legend = TRUE) + scale_color_discrete("Variabelen")
-ggsave(plot_verg_nutr, 
-         filename = paste0("./exports/plot_meetreeks_", "nutriënten","_", i,".jpg"), 
-         dpi = 200, width = 15, height = 10)
+  ylab("Meetwaarde")  + 
+  scale_color_discrete("Variabelen") +
+  scale_linetype_discrete("Locatie")
+p1
 ```
+
