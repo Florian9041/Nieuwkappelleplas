@@ -160,10 +160,10 @@ nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
 # genereer plot en sla op
-maak_figuur <- function(dataset, component, naam, title = NULL, xas = NULL, yas = NULL){
+maak_figuur <- function(dataset, component, naam, title = NULL, xas = NULL, yas = NULL, linetype = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = linetype)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
@@ -174,10 +174,10 @@ maak_figuur <- function(dataset, component, naam, title = NULL, xas = NULL, yas 
 }
 
 # puur om plot te genereren
-maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL){
+maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL, linetype = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label)) +
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = linetype)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
@@ -206,8 +206,19 @@ ggarrange(plot_secchi_R, plot_secchi_ZP, ncol = 2, nrow = 1, legend = FALSE)
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
                                        "pH_tit", "pH_veld")
-maak_figuur(data, componenten_veld, "veld", "Variabelen veldmeting Nieuwkappelleplas")
-# geeft figuur met alle variabelen van veldmetingen per maand (! 2 metingen per maand voor O2verz !)
+veldmetingen <- data %>%
+  filter(AquaComponent %in% componenten_veld) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
+  geom_line() +
+  geom_point() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Veldmetingen") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (log10)")  + 
+  scale_color_discrete("Variabelen") +
+  scale_linetype_discrete("Locatie") +
+  scale_y_log10()
+veldmetingen
 ```
 
 
@@ -267,15 +278,17 @@ ggarrange(p1, p2, nrow = 1, common.legend = TRUE)
 
 # nutriëntenlast
 ```{r}
-plot_Nutrienten <- nutriënten %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent, linetype = FieldSampleID)) + 
+plot_Nutrienten <- data %>%
+  filter(AquaComponent %in% c("NO2", "NO3", "NH4", "TN", "TP", "NO2_N", "NO3_N", "NH4-N")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) + 
   geom_line() + 
   geom_point() +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Nutriëntenlast randzone") +
+  labs(title = "Nutriëntenlast NKP") +
   xlab("Datum staalname") + 
   ylab("Meetwaarde (mg/L)")  + 
-  scale_color_discrete("Variabelen")
+  scale_color_discrete("Variabelen") +
+  scale_linetype_discrete("Locatie")
 plot_Nutrienten
 ```
 
@@ -348,11 +361,41 @@ p1 <- data %>%
   geom_line() + 
   geom_point() +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Zuurstofgehalte waterkolom zonnepanelen") +
+  labs(title = "Zuurstofgehalte NKP") +
   xlab("Datum staalname") + 
   ylab("Meetwaarde")  + 
   scale_color_discrete("Variabelen") +
   scale_linetype_discrete("Locatie")
 p1
+```
+
+# zoutparameters
+```{r}
+# !!! opgelet !!! saliniteit is omgezet van g/kg naar mg/kg (/1000)
+p1 <- data %>%
+  filter(AquaComponent %in% c("SO4", "SO4_S","Cl", "Na")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
+  geom_line() + 
+  geom_point() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Zoutgehalte NKP") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (mg/L)")  + 
+  scale_color_discrete("Variabelen") +
+  scale_linetype_discrete("Locatie")
+p1
+
+EGV <- data %>%
+  filter(AquaComponent %in% c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
+  geom_line() + 
+  geom_point() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Geleidend vermogen NKP") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (µS/cm)")  + 
+  scale_color_discrete("Variabelen") +
+  scale_linetype_discrete("Locatie")
+EGV
 ```
 
