@@ -254,19 +254,7 @@ maak_plot(data, c("pH_veld", "pH_labo"), "Zuurtegraad labo en veld", xas = "Datu
 
 ```{r}
 # maak figuur
-
-p1 <- data %>%
-  filter(AquaComponent %in% c("chl_a", "SD_veld", "ZS_105")) %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
-  geom_line() +
-  geom_point() +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Helderheid waterkolom") +
-  xlab("Datum staalname") + 
-  ylab("Meetwaarde (log10)")  + 
-  scale_color_discrete("Variabelen") +
-  scale_y_log10()
-p1
+maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (µg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 # afzonderlijke plots
 
@@ -383,6 +371,9 @@ maak_plot(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas 
 maak_plot(data, "Cl", "Chloride-concentratie (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 140, color = "blue", linetype = "dashed")
 quantile(data$ResultCalc[data$AquaComponent %in% "Cl"], probs = 0.9)
 ## 90p = 158.19 mg/L (> MKN 140 mg/L) NOK
+
+## Natrium
+
 
 # saliniteit 
 maak_plot(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
