@@ -159,28 +159,30 @@ nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
 # genereer plot en sla op
-maak_figuur <- function(dataset, component, naam, title = NULL, xas = NULL, yas = NULL){
+save_plot <- function(dataset, component, naam, title = NULL, xas = NULL, yas = NULL, naam_linetype = NULL, labels_linetype = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
-    labs(title = title) + xlab(xas) + ylab(yas)
+    labs(title = title) + xlab(xas) + ylab(yas) +
+  scale_linetype_discrete(name = naam_linetype, labels = labels_linetype)
   print(figuur)
   ggsave(plot = figuur,
          filename = paste0("./exports/NKP_", naam, ".jpg"), width = 9, height = 6)
 }
 
 # puur om plot te genereren
-maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL){
+maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL, naam_linetype = NULL, labels_linetype = NULL){
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
     geom_line() +
     geom_point() +
-    labs(title = title) + xlab(xas) + ylab(yas)
+    labs(title = title) + xlab(xas) + ylab(yas) +
+  scale_linetype_discrete(name = naam_linetype, labels = labels_linetype)
   figuur
 }
 ```
@@ -242,6 +244,11 @@ for (i in Componenten) {
 # geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
 ```
 
+# Zuurtegraad
+
+```{r}
+maak_plot(data, c("pH_veld", "pH_labo"), "Zuurtegraad labo en veld", xas = "Datum staalname", yas = "Meetwaarde", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+```
 
 # chlorofyl, zwevende stof & doorzicht
 
@@ -260,12 +267,24 @@ p1 <- data %>%
   scale_color_discrete("Variabelen") +
   scale_y_log10()
 p1
+
+# afzonderlijke plots
+
+## chlorofyl-a
+maak_plot(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Secchi-diepte
+maak_plot(data, "SD_veld", "Doorzicht waterkolom", xas = "Datum staalname", yas = "Meetwaarde (m)", naam_linetype = NULL, labels_linetype = NULL)
+
+## Zwevende stof
+maak_plot(data, "ZS_105", "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)", naam_linetype = NULL, labels_linetype = NULL)
+
 ```
 
 # nutriëntenlast
 ```{r}
 plot_Nutrienten <- data %>%
-  filter(AquaComponent %in% c("NO2", "NO3", "NH4", "TN", "TP", "NO2_N", "NO3_N", "NH4-N")) %>%
+  filter(AquaComponent %in% c("NO2", "NO3", "NH4", "TN", "TP", "NO2_N", "NO3_N", "NH4_N")) %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) + 
   geom_line() + 
   geom_point() +
@@ -276,6 +295,24 @@ plot_Nutrienten <- data %>%
   scale_color_discrete("Variabelen") +
   scale_linetype_discrete("Locatie")
 plot_Nutrienten
+
+# afZonderlijke plots
+
+## Ammonium
+maak_plot(data, c("NH4", "NH4_N"), "Ammonium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Nitriet
+maak_plot(data, c("NO2", "NO2_N"), "Nitriet-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Nitraat
+maak_plot(data, c("NO3", "NO3_N"), "Ammonium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Totale stikstof
+maak_plot(data, "TN", "Totale stikstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Totale fosfor
+maak_plot(data, "TP", "Totale fosfor-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
 ```
 
 ## cumulatieve plot stikstof en fosfor
@@ -286,12 +323,12 @@ cum_TN <- nutriënten %>%
   arrange(FieldSamplingDate) %>%
   mutate(CumulativeSum = cumsum(ResultCalc))
 
-plotTN <- ggplot(data = cum_TN, aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID)) + 
+plotcumTN <- ggplot(data = cum_TN, aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID)) + 
   geom_line(color = "orange") + 
   geom_point(color = "orange") +
-  labs(title = "Cumulatieve plot totale stikstof zonnepanelen",
+  labs(title = "Cumulatieve plot totale stikstof",
        x = "Datum staalname",
-       y = "Cumulatieve som van meetwaarde (mg/L)") +
+       y = "Cumulatieve som (mg/L)") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_linetype_discrete("Locatie")
 plotcumTN
@@ -302,12 +339,12 @@ cum_TP <- nutriënten %>%
   arrange(FieldSamplingDate) %>%
   mutate(CumulativeSum = cumsum(ResultCalc))
 
-plotTP <- ggplot(data = cum_TP, aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID)) + 
+plotcumTP <- ggplot(data = cum_TP, aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID)) + 
   geom_line(color = "orange") + 
   geom_point(color = "orange") +
-  labs(title = "Cumulatieve plot totale fosfor randzone",
+  labs(title = "Cumulatieve plot totale fosfor",
        x = "Datum staalname",
-       y = "Cumulatieve som van meetwaarde (mg/L)") +
+       y = "Cumulatieve som (mg/L)") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_linetype_discrete("Locatie")
 plotcumTP
@@ -315,47 +352,45 @@ plotcumTP
 
 # zuurstof
 ```{r}
-p1 <- data %>%
-  filter(AquaComponent %in% c("O2_veld", "O2verz")) %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = AquaComponent, linetype = FieldSampleID)) +
-  geom_line() + 
-  geom_point() +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Zuurstofgehalte NKP") +
-  xlab("Datum staalname") + 
-  ylab("Meetwaarde")  + 
-  scale_color_discrete("Variabelen") +
-  scale_linetype_discrete("Locatie")
-p1
+maak_plot(data, c("O2verz", "O2_veld"), "Zuurstofgehalte", xas = "Datum staalname", yas = "Meetwaarde", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+# afzonderlijke plots
+
+## Zuurstofverzadiging
+maak_plot(data, "O2verz", "Zuurstof-verzadiging", xas = "Datum staalname", yas = "Meetwaarde (%)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Zuurstofconcentratie
+maak_plot(data, "O2_veld", "Zuurstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
 ```
 
 # zoutparameters
 ```{r}
-# !!! opgelet !!! saliniteit is omgezet van g/kg naar mg/kg (/1000)
-p1 <- data %>%
-  filter(AquaComponent %in% c("SO4", "SO4_S","Cl", "Na")) %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
-  geom_line() + 
-  geom_point() +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Zoutgehalte NKP") +
-  xlab("Datum staalname") + 
-  ylab("Meetwaarde (mg/L)")  + 
-  scale_color_discrete("Variabelen") +
-  scale_linetype_discrete("Locatie")
-p1
+# zout-ionen
+maak_plot(data, c("SO4", "SO4_S", "Cl", "Na"), "Zout-ionen", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
-EGV <- data %>%
-  filter(AquaComponent %in% c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo")) %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
-  geom_line() + 
-  geom_point() +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Geleidend vermogen NKP") +
-  xlab("Datum staalname") + 
-  ylab("Meetwaarde (µS/cm)")  + 
-  scale_color_discrete("Variabelen") +
-  scale_linetype_discrete("Locatie")
-EGV
+# afzonderlijke plots
+
+## Sulfaat
+maak_plot(data, "SO4", "Sulfaat-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+quantile(data$ResultCalc[data$AquaComponent %in% "SO4"], probs = 0.9)
+## 90p = 49.815 mg/L (<< MKN 100 mg/L) OK
+
+## Sulfaat-Sulfur
+maak_plot(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## Chloride
+maak_plot(data, "Cl", "Chloride-concentratie (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 140, color = "blue", linetype = "dashed")
+quantile(data$ResultCalc[data$AquaComponent %in% "Cl"], probs = 0.9)
+## 90p = 158.19 mg/L (> MKN 140 mg/L) NOK
+
+# saliniteit 
+maak_plot(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+# Elektrische geleidbaarheid
+maak_plot(data, c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "blue", linetype = "dashed")
+quantile(data$ResultCalc[data$AquaComponent %in% "EGV_calc"], probs = 0.9)
+## 90p = 857.16 µS/cm (> MKN 750 µS/cm 20°C ) NOK
+
 ```
 
