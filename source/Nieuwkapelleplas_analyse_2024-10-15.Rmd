@@ -264,10 +264,10 @@ data %>% filter(AquaComponent %in% c("pH_veld", "pH_labo")) %>%
 
 ```{r}
 # maak figuur
-maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (log10)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## log-getransformeerd
-maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (log10)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
+maak_plot(data, c("chl_a", "SD_veld", "ZS_550", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (log10)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
   scale_y_log10()
 
 # afzonderlijke plots
@@ -289,14 +289,14 @@ zomerhalfsecchi <- data %>%
 ## Zomerhalfjaargemiddelde = 1.89 m > 1.8 m (MKN) - OK
 
 ## Zwevende stof
-maak_plot(data, "ZS_105", "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)", naam_linetype = NULL, labels_linetype = NULL)
-
+maak_plot(data, c("ZS_105", "ZS_550"), "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)", naam_linetype = NULL, labels_linetype = NULL)
+### ZS_105 toename in september (fytplankton?)
 ```
 
 # nutriëntenlast
 ```{r}
 plot_Nutrienten <- data %>%
-  filter(AquaComponent %in% c("NO2", "NO3", "NH4", "TN", "TP", "NO2_N", "NO3_N", "NH4_N")) %>%
+  filter(AquaComponent %in% c("NO2", "NO3", "NH4", "TN", "NO2_N", "NO3_N", "NH4_N")) %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) + 
   geom_line() + 
   geom_point() +
@@ -307,35 +307,39 @@ plot_Nutrienten <- data %>%
   scale_color_discrete("Variabelen") +
   scale_linetype_discrete("Locatie")
 plot_Nutrienten
+# zonder fosfor
 
 # afZonderlijke plots
 
 ## Ammonium
-maak_plot(data, c("NH4", "NH4_N"), "Ammonium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("NH4_N"), "Ammonium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## Nitriet
-maak_plot(data, c("NO2", "NO2_N"), "Nitriet-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("NO2_N"), "Nitriet-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## Nitraat
-maak_plot(data, c("NO3", "NO3_N"), "Ammonium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("NO3_N"), "Nitraat-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## Totale stikstof
-maak_plot(data, "TN", "Totale stikstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, "TN", "Totale stikstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg N/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 ### zomerhalfjaargemiddelde TN
 data %>%
   filter(AquaComponent %in% "TN") %>%
   filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
-### 1.324 mg/L > 1.3 mg/L MKN - NOK
+###  mg/L > 1.3 mg/L MKN - OK
+### zonder organische stikstof!
+### hernoem naar som ammonium, nitriet, nitraat (=som anorganische stikstof)
 
 ## Totale fosfor
-maak_plot(data, "TP", "Totale fosfor-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, "TP", "Totale fosfor-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg P/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 ### zomerhalfjaargemiddelde TP
 data %>%
   filter(AquaComponent %in% "TP") %>%
   filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
 ### 0.171 mg/L >> 0.055 mg/L MKN - NOK
+### voeg MKN toe
 
 ```
 
@@ -356,6 +360,7 @@ plotcumTN <- ggplot(data = cum_TN, aes(x = FieldSamplingDate, y = CumulativeSum,
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_linetype_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
 plotcumTN
+# anorganische stikstof
 
 # voor TP
 cum_TP <- nutriënten %>%
@@ -445,9 +450,9 @@ maak_plot(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas = "Me
 maak_plot(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 # Elektrische geleidbaarheid
-maak_plot(data, c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "turquoise4", linetype = "dashed")
-quantile(data$ResultCalc[data$AquaComponent %in% "EGV_calc"], probs = 0.9)
-## 90p = 857.16 µS/cm (> MKN 750 µS/cm 20°C ) NOK
+maak_plot(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "turquoise4", linetype = "dashed")
+quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld"], probs = 0.9)
+## 90p = 922.4 µS/cm (> MKN 750 µS/cm 20°C ) NOK
 
 ```
 
