@@ -36,6 +36,7 @@ library(dplyr)
 library(inbodb)
 library(gridExtra)
 library(ggpubr)
+library(tsibble)
 ```
 
 # import
@@ -90,38 +91,46 @@ x = FieldSamplingDate
 y = ResultCalc
 label: als titel
 
+# vul hier MKN-normen in voor de te onderzoeken stof(fen)
 ```{r}
-# vul hier MKN-norm in voor de te onderzoeken stof(fen)
 ## watertype Awe - Nieuwkappelleplas
 MKN_O2conc = 6 # mg O2/L - 10p
 MKN_02verz = 120 # % - maximum
+
 MKN_TN = 1.3 # mg/L - zomerhalfjaargem
 MKN_TP = 0.055 # mg/L - zomerhalfjaargem
+
 MKN_doorzicht = 1.8 # m - zomerhalfjaargem
+
 MKN_EC = 750 # µS/cm (20°C) - 90p
 MKN_Cl = 140 # mg/L - gemiddelde
 MKN_Sulfaat = 100 # mg/L - gemiddelde
-MKN_temp = 25 # °C - maximum
-titel_figuur = "Chloride-concentratie NKP (+ gemiddelde)"
-naam_variabele = "Chloride (mg/L)"
-naam_tijdsreeks = "Datum staalname"
 
+MKN_temp = 25 # °C - maximum
+
+MKN_pH_min = 6.5  # vul minimum pH in
+MKN_pH_max = 8.5  # vul maximum pH in
+```
+
+
+```{r}
 # figuur met 2 trendlijnen (1 voor ZP, 1 voor R)
 figuur <- data %>% 
     filter(AquaComponent == "Cl") %>% 
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID,)) + 
+    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
     geom_line() +
     geom_point() +
   geom_hline(yintercept = MKN_Cl, colour = "blue", linetype = "dashed") +
-  geom_hline(yintercept = data_ZP_stat$gem[data_ZP_stat$AquaComponent == "Cl"], color = "lightblue") +
-  geom_hline(yintercept = data_R_stat$gem[data_R_stat$AquaComponent == "Cl"], color = "tomato2") +
-  labs(title = titel_figuur)  + xlab(naam_tijdsreeks) + ylab(naam_variabele) +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
+  geom_hline(yintercept = data_ZP_stat$gem[data_ZP_stat$AquaComponent == "Cl"], color = "turquoise3") +
+  geom_hline(yintercept = data_R_stat$gem[data_R_stat$AquaComponent == "Cl"], color = "tomato1") +
+  labs(title = "Chloride-concentratie NKP (+ gemiddelde)")  + 
+  xlab("Datum staalname") + 
+  ylab("Chloride (mg/L)") +
+    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  scale_color_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
 figuur
 
 ## pH - watertype Awe (met minimum en maximum)
-MKN_pH_min = 6.5  # vul minimum pH in
-MKN_pH_max = 8.5  # vul maximum pH in
 titel_figuur = "Zuurtegraad met gemiddeldes (+ MKN in blauw)"
 
 ## figuur 
@@ -247,7 +256,12 @@ for (i in Componenten) {
 # Zuurtegraad
 
 ```{r}
-maak_plot(data, c("pH_veld", "pH_labo"), "Zuurtegraad labo en veld", xas = "Datum staalname", yas = "Meetwaarde", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("pH_veld", "pH_labo"), "Zuurtegraad labo en veld (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 6.5, color = "turquoise3", linetype = "dashed") +
+  geom_hline(yintercept = 8.5, color = "turquoise3", linetype = "dashed")
+data %>% filter(AquaComponent %in% c("pH_veld", "pH_labo")) %>%
+  summarise(maximum = max(ResultCalc), minimum = min (ResultCalc))
+## max = 9.47 > 8.5 MKN - NOK
+## min = 7.783 > 6.5 MKN - OK
 ```
 
 # chlorofyl, zwevende stof & doorzicht
@@ -262,7 +276,17 @@ maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = 
 maak_plot(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## Secchi-diepte
-maak_plot(data, "SD_veld", "Doorzicht waterkolom", xas = "Datum staalname", yas = "Meetwaarde (m)", naam_linetype = NULL, labels_linetype = NULL)
+maak_plot(data, "SD_veld", "Doorzicht waterkolom", xas = "Datum staalname", yas = "Meetwaarde (m)", naam_linetype = NULL, labels_linetype = NULL) + 
+  geom_hline(yintercept = 1.8, color = "turquoise4") +
+  geom_hline(yintercept = 1.89, color = "tomato3") +
+  scale_color_manual(name = "MKN-norm", labels = "Zomerhalfjaargemiddelde (m)",
+                          values = 2,
+                          guide = guide_legend(override.aes = list(color = "turquoise4")))
+zomerhalfsecchi <- data %>%
+  filter(AquaComponent %in% "SD_veld") %>%
+  filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
+  summarise(zomerhalfjaar = mean(ResultCalc))
+## Zomerhalfjaargemiddelde = 1.89 m > 1.8 m (MKN) - OK
 
 ## Zwevende stof
 maak_plot(data, "ZS_105", "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)", naam_linetype = NULL, labels_linetype = NULL)
@@ -297,9 +321,21 @@ maak_plot(data, c("NO3", "NO3_N"), "Ammonium-concentratie", xas = "Datum staalna
 
 ## Totale stikstof
 maak_plot(data, "TN", "Totale stikstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+### zomerhalfjaargemiddelde TN
+data %>%
+  filter(AquaComponent %in% "TN") %>%
+  filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
+  summarise(zomerhalfjaar = mean(ResultCalc))
+### 1.324 mg/L > 1.3 mg/L MKN - NOK
 
 ## Totale fosfor
 maak_plot(data, "TP", "Totale fosfor-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+### zomerhalfjaargemiddelde TP
+data %>%
+  filter(AquaComponent %in% "TP") %>%
+  filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
+  summarise(zomerhalfjaar = mean(ResultCalc))
+### 0.171 mg/L >> 0.055 mg/L MKN - NOK
 
 ```
 
@@ -345,11 +381,29 @@ maak_plot(data, c("O2verz", "O2_veld"), "Zuurstofgehalte", xas = "Datum staalnam
 # afzonderlijke plots
 
 ## Zuurstofverzadiging
-maak_plot(data, "O2verz", "Zuurstof-verzadiging", xas = "Datum staalname", yas = "Meetwaarde (%)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, "O2verz", "Zuurstof-verzadiging", xas = "Datum staalname", yas = "Meetwaarde (%)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
+  geom_hline(aes(yintercept= 120), colour= 'turquoise4') +
+  scale_color_manual(name = "MKN-norm", labels = "Maximum %",
+                          values = 2,
+                          guide = guide_legend(override.aes = list(color = "turquoise4")))
+data %>% filter(AquaComponent %in% "O2verz") %>%
+  summarise(maximum = max(ResultCalc))
+### 161.9 % >> 120% MKN - NOK
 
 ## Zuurstofconcentratie
-maak_plot(data, "O2_veld", "Zuurstof-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))+ geom_hline(aes(yintercept= 6), colour= 'turquoise4') +
+  geom_hline(aes(yintercept= 8.731), colour= 'tomato3')
+quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld"], probs = 0.1)
+# p-10 = 8.731 > 6 mg/L  - OK
+```
 
+# temperatuur
+```{r}
+maak_plot(data, "T_veld", "Temperatuur waterkolom (+ maximum MKN)", xas = "Datum staalname", yas = "Meetwaarde (° C)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
+  geom_hline(yintercept = 25, color = "turquoise4", linetype = "dashed")
+data %>% filter(AquaComponent %in% "T_veld") %>%
+  summarise(maximum = max(ResultCalc))
+### Maximum = 23.5 °C < 25 °C MKN - OK
 ```
 
 # zoutparameters
@@ -368,18 +422,18 @@ quantile(data$ResultCalc[data$AquaComponent %in% "SO4"], probs = 0.9)
 maak_plot(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 ## Chloride
-maak_plot(data, "Cl", "Chloride-concentratie (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 140, color = "blue", linetype = "dashed")
+maak_plot(data, "Cl", "Chloride-concentratie (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 140, color = "turquoise4", linetype = "dashed") + annotate("text", x = as.Date("2024-06-26"), y = 141, label = "MKN-norm 90-percentiel chloride", color = "turquoise4")
 quantile(data$ResultCalc[data$AquaComponent %in% "Cl"], probs = 0.9)
 ## 90p = 158.19 mg/L (> MKN 140 mg/L) NOK
 
 ## Natrium
-
+maak_plot(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 # saliniteit 
 maak_plot(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
 
 # Elektrische geleidbaarheid
-maak_plot(data, c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "blue", linetype = "dashed")
+maak_plot(data, c("EGV25_veld", "EGV_calc", "EGV_tit", "EGV_labo"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "turquoise4", linetype = "dashed")
 quantile(data$ResultCalc[data$AquaComponent %in% "EGV_calc"], probs = 0.9)
 ## 90p = 857.16 µS/cm (> MKN 750 µS/cm 20°C ) NOK
 
