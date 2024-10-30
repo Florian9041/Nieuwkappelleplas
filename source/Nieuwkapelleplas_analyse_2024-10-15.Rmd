@@ -28,6 +28,7 @@ opts_chunk$set(
   message = TRUE
 )
 
+library(ggpubr)
 library(lubridate)
 library(readxl) 
 library(tidyverse)
@@ -35,8 +36,7 @@ library(ggplot2)
 library(dplyr)
 library(inbodb)
 library(gridExtra)
-library(ggpubr)
-library(tsibble)
+
 ```
 
 # import
@@ -268,7 +268,11 @@ data %>% filter(AquaComponent %in% c("pH_veld", "pH_labo")) %>%
 
 ```{r}
 # maak figuur
-maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (µg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (log10)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+
+## log-getransformeerd
+maak_plot(data, c("chl_a", "SD_veld", "ZS_105"), "Helderheid waterkolom", xas = "Datum staalname", yas = "Meetwaarde (log10)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
+  scale_y_log10()
 
 # afzonderlijke plots
 
@@ -354,7 +358,7 @@ plotcumTN <- ggplot(data = cum_TN, aes(x = FieldSamplingDate, y = CumulativeSum,
        x = "Datum staalname",
        y = "Cumulatieve som (mg/L)") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  scale_linetype_discrete("Locatie")
+  scale_linetype_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
 plotcumTN
 
 # voor TP
@@ -370,8 +374,20 @@ plotcumTP <- ggplot(data = cum_TP, aes(x = FieldSamplingDate, y = CumulativeSum,
        x = "Datum staalname",
        y = "Cumulatieve som (mg/L)") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  scale_linetype_discrete("Locatie")
+  scale_linetype_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
 plotcumTP
+
+# geocombineerde plot
+
+ggplot() +
+  geom_line(data = cum_TN,aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID, color = label)) +
+  geom_line(data = cum_TP,aes(x = FieldSamplingDate, y = CumulativeSum, linetype = FieldSampleID, color = label)) +
+  labs(title = "Cumulatieve plot totale stikstof en fosfoer",
+       x = "Datum staalname",
+       y = "Cumulatieve som (mg/L)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  scale_linetype_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
+
 ```
 
 # zuurstof
