@@ -13,6 +13,17 @@ editor_options:
 ---
 !! gebruik een project in R; met als submappen /data en /exports
 
+```{r}
+# Enable inbo r-universe
+options(repos = c(
+    inbo = 'https://inbo.r-universe.dev',
+    CRAN = 'https://cloud.r-project.org'))
+
+# Install the package
+install.packages('ggpubr')
+```
+
+
 ```{r setup, results ='hide', eval = TRUE, echo = FALSE, message = FALSE, cache = FALSE, purl = FALSE, warning = FALSE}
 library(knitr)
 opts_chunk$set(
@@ -196,23 +207,8 @@ maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL, 
 }
 ```
 
-toepassing van deze functie
+# meetreeks veldmetingen
 ```{r}
-# zuurtegraad
-plot_pH_R <- maak_plot(data_R, "pH_labo", "Zuurtegraad randzone")
-plot_pH_ZP <- maak_plot(data_ZP, "pH_labo", "Zuurtegraad zonnepanelen")
-ggarrange(plot_pH_R, plot_pH_ZP, ncol = 2, nrow = 1, common.legend = TRUE, legend = FALSE)
-
-# nitraat
-plot_NO3_R <- maak_plot(data_R, "NO3", "Nitraat randzone", yas = "mg/L")
-plot_NO3_ZP <- maak_plot(data_ZP, "NO3", "Nitraat zonnepanelen", yas = "mg/L")
-ggarrange(plot_NO3_R, plot_NO3_ZP, ncol = 2, nrow = 1, common.legend = TRUE, legend = FALSE)
-
-# secchi-diepte
-plot_secchi_R <- maak_plot(data_R, "SD_veld", "Secchi-diepte randzone", yas = "helderheid (m)")
-plot_secchi_ZP <- maak_plot(data_ZP, "SD_veld", "Secchi-diepte zonnepanelen", yas = "helderheid (m)")
-ggarrange(plot_secchi_R, plot_secchi_ZP, ncol = 2, nrow = 1, legend = FALSE)
-
 # meetreeks veldmetingen per plas
 componenten_veld <- c("O2_veld", "O2verz", "sal_veld", "T_veld",
                                        "pH_tit", "pH_veld")
