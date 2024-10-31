@@ -403,7 +403,7 @@ plot2 <- data %>%
 # gecombineerde figuur
 plot3 <- ggarrange(plot1, plot2, common.legend = TRUE, legend = "bottom")
 
-annotate_figure(plot3, top = text_grob("Anorganische stikstof (NH4_N + NO3_N + NO2_N)", 
+annotate_figure(plot3, top = text_grob("Anorganische stikstof (N_anorg = NH4_N + NO3_N + NO2_N)", 
                color = "black", face = "bold", size = 14))
 ```
 
@@ -414,29 +414,56 @@ maak_plot(data, c("O2verz", "O2_veld"), "Zuurstofgehalte", xas = "Datum staalnam
 # afzonderlijke plots
 
 ## Zuurstofverzadiging
-maak_plot(data, "O2verz", "Zuurstof-verzadiging", xas = "Datum staalname", yas = "Meetwaarde (%)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
-  geom_hline(aes(yintercept= 120), colour= 'turquoise4') +
-  scale_color_manual(name = "MKN-norm", labels = "Maximum %",
-                          values = 2,
-                          guide = guide_legend(override.aes = list(color = "turquoise4")))
+maak_plot_1var(data, "O2verz", "Zuurstof-verzadiging (+ MKN norm maximum)", xas = "Datum staalname", yas = "Meetwaarde (%)") +
+  geom_hline(aes(yintercept= 120), colour= 'black', linetype = "dashed")
 data %>% filter(AquaComponent %in% "O2verz") %>%
   summarise(maximum = max(ResultCalc))
 ### 161.9 % >> 120% MKN - NOK
 
 ## Zuurstofconcentratie
-maak_plot(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))+ geom_hline(aes(yintercept= 6), colour= 'turquoise4') +
-  geom_hline(aes(yintercept= 8.731), colour= 'tomato3')
+maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed")
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld"], probs = 0.1)
 # p-10 = 8.731 > 6 mg/L  - OK
 ```
 
 # temperatuur
 ```{r}
-maak_plot(data, "T_veld", "Temperatuur waterkolom (+ maximum MKN)", xas = "Datum staalname", yas = "Meetwaarde (° C)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) +
-  geom_hline(yintercept = 25, color = "turquoise4", linetype = "dashed")
+maak_plot_1var(data, "T_veld", "Temperatuur waterkolom (+ maximum MKN)", xas = "Datum staalname", yas = "Meetwaarde (° C)") +
+  geom_hline(yintercept = 25, color = "black", linetype = "dashed")
 data %>% filter(AquaComponent %in% "T_veld") %>%
   summarise(maximum = max(ResultCalc))
 ### Maximum = 23.5 °C < 25 °C MKN - OK
+```
+
+# silicium
+```{r}
+maak_plot_1var(data, "Si", "Silicium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")
+
+## anorganische stikstof + silicium
+plot1 <- data %>%
+  filter(FieldSampleID == "WVLDIK0133_R" & AquaComponent %in% c("N_anorg", "NH4_N","NO3_N", "NO2_N")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
+  geom_area() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Randzone") +
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (mg N/L)")  + 
+  scale_fill_discrete("Variabelen") + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_R") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
+
+# zonnepanelen
+plot2 <- data %>%
+  filter(FieldSampleID == "WVLDIK0133_ZP" & AquaComponent %in% c("N_anorg", "NH4_N","NO3_N", "NO2_N")) %>%
+  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
+  geom_area() +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  labs(title = "Zonnepanelen") +
+  xlab("Datum staalname") + ylab(NULL) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_ZP") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
+
+# gecombineerde figuur
+plot3 <- ggarrange(plot1, plot2, common.legend = TRUE, legend = "bottom")
+
+annotate_figure(plot3, top = text_grob("Anorganische stikstof (N_anorg = NH4_N + NO3_N + NO2_N) + Silicium", 
+               color = "black", face = "bold", size = 14))
 ```
 
 # zoutparameters
@@ -447,26 +474,26 @@ maak_plot(data, c("SO4", "SO4_S", "Cl", "Na"), "Zout-ionen", xas = "Datum staaln
 # afzonderlijke plots
 
 ## Sulfaat
-maak_plot(data, "SO4", "Sulfaat-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot_1var(data, "SO4", "Sulfaat-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")
 quantile(data$ResultCalc[data$AquaComponent %in% "SO4"], probs = 0.9)
 ## 90p = 49.815 mg/L (<< MKN 100 mg/L) OK
 
 ## Sulfaat-Sulfur
-maak_plot(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot_1var(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")
 
 ## Chloride
-maak_plot(data, "Cl", "Chloride-concentratie (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 140, color = "turquoise4", linetype = "dashed") + annotate("text", x = as.Date("2024-06-26"), y = 141, label = "MKN-norm 90-percentiel chloride", color = "turquoise4")
+maak_plot_1var(data, "Cl", "Chloride-concentratie (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)") + geom_hline(yintercept = 140, color = "black", linetype = "dashed")
 quantile(data$ResultCalc[data$AquaComponent %in% "Cl"], probs = 0.9)
 ## 90p = 158.19 mg/L (> MKN 140 mg/L) NOK
 
 ## Natrium
-maak_plot(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas = "Meetwaarde (mg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot_1var(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas = "Meetwaarde (mg/L)")
 
 # saliniteit 
-maak_plot(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot_1var(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)")
 
 # Elektrische geleidbaarheid
-maak_plot(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 750, color = "turquoise4", linetype = "dashed")
+maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed")
 quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld"], probs = 0.9)
 ## 90p = 922.4 µS/cm (> MKN 750 µS/cm 20°C ) NOK
 
