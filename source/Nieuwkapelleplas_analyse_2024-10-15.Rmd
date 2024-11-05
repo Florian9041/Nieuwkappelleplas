@@ -629,7 +629,5 @@ ionenNKP <- read_csv2("./data/IonenNKP.csv")[2:9] # laat fieldsamplingdate valle
 ```{r}
 ## CO3^2- = CO3
 ## HCO3- = HCO3_OEP
-maucha(ionen_NKP, main = "Ionensamenstelling Nieuwkappelleplas \n oktober 2023-augustus 2024")
-maucha(ionen_NKP, polygon = TRUE)
 mymaucha(ionenNKP, main = "Ionensamenstelling Nieuwkappelleplas \n oktober 2023-augustus 2024")
 ```
