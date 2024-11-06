@@ -43,6 +43,7 @@ library(ggpubr)
 library(lubridate)
 library(readxl) 
 library(tidyverse)
+library(tidyr)
 library(ggplot2)
 library(dplyr)
 library(inbodb)
@@ -59,17 +60,17 @@ data$FieldSamplingDate <- as.Date(data$FieldSamplingDate, format = "%d/%m/%Y")
 # remove 2 rowz of Na with LIMS-analysis name ICP_MET_OPT8300_W
 data <- data[-(which(data$AquaComponent %in% "Na" & data$LIMSAnalysisName %in% "ICP_MET_OPT8300_W")),]
 
-data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
-data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
+#data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
+#data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
 ```
 
 # neem gemiddelde waarde tussen randzone en zonnepanelen-zone
 ```{r}
-combitabel <- bind_rows(data_ZP, data_R)
-combitabel <- combitabel %>%
-  group_by(FieldSamplingDate, AquaComponent, label) %>%
-  summarise(combo = mean(ResultCalc)) %>%
-  select(FieldSamplingDate, AquaComponent, combo, label)
+#combitabel <- bind_rows(data_ZP, data_R)
+#combitabel <- combitabel %>%
+#  group_by(FieldSamplingDate, AquaComponent, label) %>%
+#  summarise(combo = mean(ResultCalc)) %>%
+#  select(FieldSamplingDate, AquaComponent, combo, label)
 ```
 
 
@@ -125,49 +126,6 @@ MKN_temp = 25 # °C - maximum
 MKN_pH_min = 6.5  # vul minimum pH in
 MKN_pH_max = 8.5  # vul maximum pH in
 ```
-
-
-```{r}
-# figuur met 2 trendlijnen (1 voor ZP, 1 voor R)
-figuur <- data %>% 
-    filter(AquaComponent == "Cl") %>% 
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
-    geom_line() +
-    geom_point() +
-  geom_hline(yintercept = MKN_Cl, colour = "blue", linetype = "dashed") +
-  xlab("Datum staalname") + 
-  ylab("Chloride (mg/L)") +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  scale_color_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
-figuur
-
-## pH - watertype Awe (met minimum en maximum)
-titel_figuur = "Zuurtegraad met gemiddeldes (+ MKN in blauw)"
-
-## figuur 
-figuur2a <- data %>% 
-    filter(AquaComponent == "pH_veld") %>% 
-    ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) + 
-    geom_line() +
-    geom_point() +
-  geom_hline(yintercept = MKN_pH_max, colour = "blue", linetype = "dashed") +
-  geom_hline(yintercept = MKN_pH_min, colour = "blue", linetype = "dashed") + 
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y")
-figuur2a
-
-```
-
-Alle N-variabelen cumulatief in figuur zetten (Nitriet, nitraat, ammonium, OrgN = TN)
-Aandeel van gemeten vennen voldoet aan MKN-normen (voor alle variabelen)
-
-```{r}
-# subset met nitraten (NO2, NO3, NH4)
-nitraten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N"))
-nutriënten <- subset(data, AquaComponent %in% c("NO2", "NO3", "NH4", "NH4_N", "NO2_N", "NO3_N", "TP", "N_anorg"))
-nutriënten_R <- subset(nutriënten, FieldSampleID == "WVLDIK0133_R")
-nutriënten_ZP <- subset(nutriënten, FieldSampleID == "WVLDIK0133_ZP")
-```
-
 
 
 # democode functie 'maak_figuur' 
@@ -260,16 +218,8 @@ afzonderlijke figuren per variabele
 # Zuurtegraad
 
 ```{r}
-data %>%
-  filter(AquaComponent %in% "pH_veld") %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-    geom_line() +
-    geom_point() +
-    labs(title = "Zuurtegraad (+ MKN maximum en minimum)") + xlab("Datum staalname") + ylab("Meetwaarde") +
-  scale_color_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen")) + geom_hline(yintercept = 6.5, color = "black", linetype = "dashed") +
+maak_plot_1var(data, "pH_veld", "Zuurtegraad (+ MKN maximum en minimum)", yas = "Meetwaarde") + geom_hline(yintercept = 6.5, color = "black", linetype = "dashed") +
   geom_hline(yintercept = 8.5, color = "black", linetype = "dashed")
-  
 
 data %>% filter(AquaComponent %in% "pH_veld") %>%
   summarise(maximum = max(ResultCalc), minimum = min (ResultCalc))
@@ -291,27 +241,11 @@ maak_plot(data, c("chl_a", "SD_veld", "ZS_550", "ZS_105"), "Helderheid waterkolo
 # afzonderlijke plots
 
 ## chlorofyl-a
-maak_plot(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
-data %>% 
-  filter(AquaComponent %in% "chl_a") %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-    geom_line() +
-    geom_point() +
-    labs(title = "Chlorofyl-a concentratie") + xlab("Datum staalname") + ylab("Meetwaarde (µg/L)") +
-  scale_color_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
-  
+maak_plot_1var(data, "chl_a", "chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)")  
   
 
 ## Secchi-diepte
-data %>%
-  filter(AquaComponent %in% "SD_veld") %>%
-  ggplot(aes(x = FieldSamplingDate, y = ResultCalc)) +
-  geom_line() +
-  geom_point() +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
-  labs(title = "Doorzicht waterkolom (+ MKN zomerhalfjaargemiddelde)") + xlab("Datum staalname") + ylab("Secchi-diepte (m)") +
-  geom_hline(yintercept = 1.8, color = "black", linetype = "dashed")
+maak_plot_1var(data, "SD_veld", "Doorzicht waterkolom (+ MKN zomerhalfjaargemiddelde)", yas = "Secchi-diepte (m)") + geom_hline(yintercept = 1.8, color = "black", linetype = "dashed", size = 1)
 
 data %>%
   filter(AquaComponent %in% "SD_veld") %>%
@@ -320,16 +254,19 @@ data %>%
 ## Zomerhalfjaargemiddelde = 1.89 m > 1.8 m (MKN) - OK
 
 ## Zwevende stof
-maak_plot(data, c("ZS_105", "ZS_550"), "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)")
+maak_plot(data, c("ZS_105", "ZS_550"), "Zwevende stoffen in suspensie", xas = "Datum staalname", yas = "Meetwaarde (g/L)") + scale_linetype_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
 ### ZS_105 toename in september (fytplankton?)
 ```
 
 # nutriëntenlast
+Alle N-variabelen cumulatief in figuur zetten (Nitriet, nitraat, ammonium, OrgN = TN)
+Aandeel van gemeten vennen voldoet aan MKN-normen (voor alle variabelen)
+
 ```{r}
 data %>%
   filter(AquaComponent %in% c("N_anorg", "NO2_N", "NO3_N", "NH4_N")) %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) + 
-  geom_line() + 
+  geom_line(size = 1) + 
   geom_point() +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Anorganische stikstof NKP") +
@@ -363,47 +300,59 @@ data %>%
 
 
 ## Totale fosfor
-maak_plot(data, "TP", "Totale fosfor-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg P/L)", naam_linetype = "Locatie", labels_linetype = c("Randzone", "Zonnepanelen"))
+maak_plot_1var(data, "TP", "Totale fosfor-concentratie (+ MKN norm zomerhalfjaargemiddelde)", xas = "Datum staalname", yas = "Meetwaarde (mg P/L)") +
+  geom_hline(yintercept = MKN_TP, colour = "black", size = 1, linetype = "dashed")
 ### zomerhalfjaargemiddelde TP
 data %>%
   filter(AquaComponent %in% "TP") %>%
   filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
 ### 0.171 mg/L >> 0.055 mg/L MKN - NOK
-### voeg MKN toe
 
 ```
 
-## cumulatieve plot anorganische stikstof
+## absolute plot anorganische stikstof
 ```{r}
+# herordenen van variabelen van groot > klein
+anorg_N <- data %>%
+  filter(AquaComponent %in% c("NH4_N", "NO3_N", "NO2_N", "N_anorg"))
+
+anorg_N_R <- anorg_N %>%
+  filter(FieldSampleID == "WVLDIK0133_R")
+anorg_N_ZP <- anorg_N %>%
+  filter(FieldSampleID == "WVLDIK0133_ZP")
+anorg_N_R$label <- factor(anorg_N_R$label, unique(anorg_N_R[order(anorg_N_R$ResultCalc, decreasing = T), "label"]))
+anorg_N_ZP$label <- factor(anorg_N_ZP$label, unique(anorg_N_ZP[order(anorg_N_ZP$ResultCalc, decreasing = T), "label"]))
+
 # randzone
-plot1 <- data %>%
-  filter(FieldSampleID == "WVLDIK0133_R" & AquaComponent %in% c("NH4_N","NO3_N", "NO2_N")) %>%
+plot1 <- anorg_N_R %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
-  geom_area() +
+  geom_area(position = "identity", alpha = 0.6) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Randzone") +
   xlab("Datum staalname") + 
   ylab("Meetwaarde (mg N/L)")  + 
-  scale_fill_discrete("Variabelen")
+  scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,2, by = 0.1))
+plot1
+
 
 # zonnepanelen
-plot2 <- data %>%
-  filter(FieldSampleID == "WVLDIK0133_ZP" & AquaComponent %in% c("NH4_N","NO3_N", "NO2_N")) %>%
+plot2 <- anorg_N_ZP %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
-  geom_area() +
+  geom_area(position = "identity", alpha = 0.6) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Zonnepanelen") +
-  xlab("Datum staalname") + ylab(NULL)
+  xlab("Datum staalname") + ylab(NULL) + scale_y_continuous(breaks = seq(0,2, by = 0.1))
+plot2
 
 # gecombineerde figuur
 plot3 <- ggarrange(plot1, plot2, common.legend = TRUE, legend = "bottom")
 
-annotate_figure(plot3, top = text_grob("Anorganische stikstof (NH4_N + NO3_N + NO2_N)", 
+annotate_figure(plot3, top = text_grob("Anorganische stikstof (N_anorg = NH4_N + NO3_N + NO2_N)", 
                color = "black", face = "bold", size = 14))
 
-maak_plot_1var(data, "N_anorg", "Anorganische stikstof (NH4_N + NO3_N + NO2_N)", yas = "Meetwaarde (mg N/L")
 ```
+
 
 # zuurstof
 ```{r}
@@ -413,13 +362,13 @@ maak_plot(data, c("O2verz", "O2_veld"), "Zuurstofgehalte", xas = "Datum staalnam
 
 ## Zuurstofverzadiging
 maak_plot_1var(data, "O2verz", "Zuurstof-verzadiging (+ MKN norm maximum)", xas = "Datum staalname", yas = "Meetwaarde (%)") +
-  geom_hline(aes(yintercept= 120), colour= 'black', linetype = "dashed")
+  geom_hline(aes(yintercept= 120), colour= 'black', linetype = "dashed", size = 1)
 data %>% filter(AquaComponent %in% "O2verz") %>%
   summarise(maximum = max(ResultCalc))
 ### 161.9 % >> 120% MKN - NOK
 
 ## Zuurstofconcentratie
-maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed")
+maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed", size = 1)
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld"], probs = 0.1)
 # p-10 = 8.731 > 6 mg/L  - OK
 ```
@@ -427,7 +376,7 @@ quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld"], probs = 0.1)
 # temperatuur
 ```{r}
 maak_plot_1var(data, "T_veld", "Temperatuur waterkolom (+ maximum MKN)", xas = "Datum staalname", yas = "Meetwaarde (° C)") +
-  geom_hline(yintercept = 25, color = "black", linetype = "dashed")
+  geom_hline(yintercept = 25, color = "black", linetype = "dashed", size = 1)
 data %>% filter(AquaComponent %in% "T_veld") %>%
   summarise(maximum = max(ResultCalc))
 ### Maximum = 23.5 °C < 25 °C MKN - OK
@@ -437,26 +386,39 @@ data %>% filter(AquaComponent %in% "T_veld") %>%
 ```{r}
 maak_plot_1var(data, "Si", "Silicium-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")
 
+
+anorg_N <- data %>%
+  filter(AquaComponent %in% c("NH4_N", "NO3_N", "NO2_N", "N_anorg"))
+
+anorg_N_R <- anorg_N %>%
+  filter(FieldSampleID == "WVLDIK0133_R")
+anorg_N_ZP <- anorg_N %>%
+  filter(FieldSampleID == "WVLDIK0133_ZP")
+anorg_N_R$label <- factor(anorg_N_R$label, unique(anorg_N_R[order(anorg_N_R$ResultCalc, decreasing = T), "label"]))
+anorg_N_ZP$label <- factor(anorg_N_ZP$label, unique(anorg_N_ZP[order(anorg_N_ZP$ResultCalc, decreasing = T), "label"]))
+
 ## anorganische stikstof + silicium
-plot1 <- data %>%
-  filter(FieldSampleID == "WVLDIK0133_R" & AquaComponent %in% c("N_anorg", "NH4_N","NO3_N", "NO2_N")) %>%
+
+# randzone
+plot1 <- anorg_N_R %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
-  geom_area() +
+  geom_area(position = "identity", alpha = 0.6) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Randzone") +
   xlab("Datum staalname") + 
   ylab("Meetwaarde (mg N/L)")  + 
-  scale_fill_discrete("Variabelen") + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_R") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
-
+  scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,4.6, by = 0.2)) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_R") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
+plot1
 # zonnepanelen
-plot2 <- data %>%
-  filter(FieldSampleID == "WVLDIK0133_ZP" & AquaComponent %in% c("N_anorg", "NH4_N","NO3_N", "NO2_N")) %>%
+plot2 <- anorg_N_ZP %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
-  geom_area() +
+  geom_area(position = "identity", alpha = 0.6) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Zonnepanelen") +
-  xlab("Datum staalname") + ylab(NULL) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_ZP") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
-
+  xlab("Datum staalname") + 
+  ylab("Meetwaarde (mg N/L)")  + 
+  scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,4.6, by = 0.2)) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_ZP") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
+plot2
 # gecombineerde figuur
 plot3 <- ggarrange(plot1, plot2, common.legend = TRUE, legend = "bottom")
 
@@ -480,7 +442,7 @@ quantile(data$ResultCalc[data$AquaComponent %in% "SO4"], probs = 0.9)
 maak_plot_1var(data, "SO4_S", "Sulfaat-S-concentratie", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")
 
 ## Chloride
-maak_plot_1var(data, "Cl", "Chloride-concentratie (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)") + geom_hline(yintercept = 140, color = "black", linetype = "dashed")
+maak_plot_1var(data, "Cl", "Chloride-concentratie (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)") + geom_hline(yintercept = 140, color = "black", linetype = "dashed", size = 1)
 quantile(data$ResultCalc[data$AquaComponent %in% "Cl"], probs = 0.9)
 ## 90p = 158.19 mg/L (> MKN 140 mg/L) NOK
 
@@ -491,7 +453,7 @@ maak_plot_1var(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas 
 maak_plot_1var(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)")
 
 # Elektrische geleidbaarheid
-maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed")
+maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed", size = 1)
 quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld"], probs = 0.9)
 ## 90p = 922.4 µS/cm (> MKN 750 µS/cm 20°C ) NOK
 
@@ -571,8 +533,8 @@ mymaucha <- function(x, col = NULL,
     }
     
     if(labels){
-      lab <- c(expression("K"^"+"), expression("Na"^"+"), expression("Ca"^"2+"), expression("Mg"^"2+"), 
-               expression("SO"["4"]^"2-"), expression("Cl"^"-"), expression("HCO"["3"]^"-"), expression("CO"["3"]^"2-"))
+      lab <- c("K", "Na", "Ca", "Mg", 
+               "SO4", "Cl", "HCO3_OEP", "CO3")
       lab.pos.x <- coord.x[3, ]
       lab.pos.y <- coord.y[3, ]
       lab.pos.x[a < R] <- coord.poly.x[3, a < R]
@@ -619,15 +581,16 @@ ionen <- data %>%
   filter(AquaComponent %in% c("K", "Na", "Ca", "Mg", "SO4", "Cl", "HCO3_OEP", "CO3")) %>%
   group_by(AquaComponent, FieldSamplingDate) %>%
   summarise(NKP = mean(ResultCalc))
-write.csv2(ionen, file = "./data/IonenNKP.csv")
-# to wide format
-ionenNKP <- read_csv2("./data/IonenNKP.csv")[2:9] # laat fieldsamplingdate vallen
 
+# to wide format
+ionenwide <- pivot_wider(ionen, names_from = AquaComponent, values_from = NKP)
+
+data("ionwaters")
 ```
 
 ## Maak diagrammen aan
 ```{r}
 ## CO3^2- = CO3
 ## HCO3- = HCO3_OEP
-mymaucha(ionenNKP, main = "Ionensamenstelling Nieuwkappelleplas \n oktober 2023-augustus 2024")
+mymaucha(ionenwide[2:9], main = "Ionensamenstelling Nieuwkappelleplas \n oktober 2023-augustus 2024")
 ```
