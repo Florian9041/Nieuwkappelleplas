@@ -225,6 +225,11 @@ data %>% filter(AquaComponent %in% "pH_veld") %>%
   summarise(maximum = max(ResultCalc), minimum = min (ResultCalc))
 ## max = 9.47 > 8.5 MKN - NOK
 ## min = 7.783 > 6.5 MKN - OK
+
+data %>% filter(AquaComponent %in% "pH_veld" & FieldSampleID == "WVLDIK0133_R") %>%
+  summarise(maximum = max(ResultCalc), minimum = min (ResultCalc))
+data %>% filter(AquaComponent %in% "pH_veld" & FieldSampleID == "WVLDIK0133_ZP") %>%
+  summarise(maximum = max(ResultCalc), minimum = min (ResultCalc))
 ```
 
 # chlorofyl, zwevende stof & doorzicht
@@ -249,7 +254,7 @@ maak_plot_1var(data, "SD_veld", "Doorzicht waterkolom (+ MKN zomerhalfjaargemidd
 
 data %>%
   filter(AquaComponent %in% "SD_veld") %>%
-  filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
+  filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>% group_by(FieldSampleID) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
 ## Zomerhalfjaargemiddelde = 1.89 m > 1.8 m (MKN) - OK
 
@@ -311,6 +316,12 @@ data %>%
 
 ```
 
+# fosfaat
+```{r}
+maak_plot_1var(data, "PO4_P", "Fosfaat-P", yas = "Meetwaarde (mg P/L)")
+
+```
+
 ## absolute plot anorganische stikstof
 ```{r}
 # herordenen van variabelen van groot > klein
@@ -369,17 +380,19 @@ data %>% filter(AquaComponent %in% "O2verz") %>%
 
 ## Zuurstofconcentratie
 maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed", size = 1)
-quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld"], probs = 0.1)
-# p-10 = 8.731 > 6 mg/L  - OK
+
+quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_ZP"], probs = 0.1)
+quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.1)
+# p-10 = 8.83 (ZP) &  8.72  > 6 mg/L  - OK
 ```
 
 # temperatuur
 ```{r}
 maak_plot_1var(data, "T_veld", "Temperatuur waterkolom (+ maximum MKN)", xas = "Datum staalname", yas = "Meetwaarde (° C)") +
   geom_hline(yintercept = 25, color = "black", linetype = "dashed", size = 1)
-data %>% filter(AquaComponent %in% "T_veld") %>%
+data %>% filter(AquaComponent %in% "T_veld" ) %>% group_by(FieldSampleID) %>%
   summarise(maximum = max(ResultCalc))
-### Maximum = 23.5 °C < 25 °C MKN - OK
+23.### Maximum = 23.5 °C < 25 °C MKN - OK
 ```
 
 # silicium
@@ -454,10 +467,17 @@ maak_plot_1var(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "M
 
 # Elektrische geleidbaarheid
 maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed", size = 1)
-quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld"], probs = 0.9)
-## 90p = 922.4 µS/cm (> MKN 750 µS/cm 20°C ) NOK
+
+quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.9)
+## 90p = 923 (ZP) & 917 (R) µS/cm (> MKN 750 µS/cm 20°C ) NOK
 
 ```
+
+# alkaliniteit
+```{r}
+maak_plot_1var(data, "alkaliniteit", "Alkaliniteit", yas = "Meetwaarde (meq/L)")
+```
+
 
 # Maucha-diagram
 
@@ -666,18 +686,29 @@ read_vanwirdum_data <-
 data_vanwirdum <- read_vanwirdum_data()
 
 ref_punten <- data.frame(
-      location_ref = c("Li (Angeren)", "At (Witteveen)", "Th (Noordwijk)","Rh (Lobith)"),
-      Ca_ref = c(115, 0.4, 420, 82),
-      Cl_ref = c(11, 3, 19100, 178),
-      ec25_ref = c(651, 50.1, 52000, 996), # in µS/cm
-      ir_ref = c(.95, .20, .04, .45), # without units (in 0-1)
-      name_ref = c("Li", "At", "Th", "Rh"))
+      location_ref = c("Li (Angeren)", "At (Witteveen)", "Th (Noordwijk)"),
+      Ca_ref = c(115, 0.4, 420),
+      Cl_ref = c(11, 3, 19100),
+      ec25_ref = c(651, 50.1, 52000), # in µS/cm
+      ir_ref = c(.95, .20, .04), # without units (in 0-1)
+      name_ref = c("Li", "At", "Th"))
+# Reference points (Van Wirdum 1991): benchmark water samples for:
+#' 1) lithotrophic water LI: a calcium-bicarbonate type of water, usually
+#' owing its characteristic composition to a contact with soil;
+#' 2) atmotrophic water AT: a type of water with low concentrations of most
+#' constituents, usually owing its characteristic composition to atmospheric
+#' precipitation;
+#' 3) thalassotrophic water TH: a saline sodium-chloride type of water as
+#' found in the oceans;
+#' 4) molunotrophic water RH: polluted water as presently found in the Rhine.
 ```
 
 ## plot IR-EGV diagram
 ```{r}
-ggplot(ref_punten) +
-  geom_point(aes(x = ec25_ref, y = ir_ref)) + scale_x_log10() + geom_point(aes(x = mean_EGV, y = ionrat), colour = "red")
-  
+p1 <- ggplot(ref_punten, aes(x = ec25_ref, y = ir_ref, label = name_ref)) +
+  geom_point(size = 2) + scale_x_log10() + xlab("EGV (µS/cm)") + ylab("IR (%)") + scale_y_continuous(breaks = seq(0,1, by = 0.1)) + ggtitle("IR-EGV diagram Nieuwkappelleplas") + geom_text(hjust = - 0.5, vjust = - 0.5)
+p1
+# voeg NKP toe
+p1 + geom_point(aes(x = mean_EGV, y = ionrat), colour = "red") + annotate("text", x = 1150, y = 0.36, label = "NKP", colour = "red") 
 ```
 
