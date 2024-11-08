@@ -309,11 +309,10 @@ maak_plot_1var(data, "TP", "Totale fosfor-concentratie (+ MKN norm zomerhalfjaar
   geom_hline(yintercept = MKN_TP, colour = "black", size = 1, linetype = "dashed")
 ### zomerhalfjaargemiddelde TP
 data %>%
-  filter(AquaComponent %in% "TP") %>%
+  filter(AquaComponent %in% "TP" & FieldSampleID == "WVLDIK0133_ZP") %>%
   filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
-### 0.171 mg/L >> 0.055 mg/L MKN - NOK
-
+### 0.17355 (R) & 0.167625 mg/L >> 0.055 mg/L MKN - NOK
 ```
 
 # fosfaat
