@@ -472,6 +472,7 @@ maak_plot_1var(data, "alkaliniteit", "Alkaliniteit", yas = "Meetwaarde (meq/L)")
 
 ## Functie Maucha-diagram (mymaucha)
 ```{r}
+
 #' This function draws Maucha diagram to represent the main ion composition of a water sample.
 #'
 #' @param x a vector or a matrix giving the concentrations of the ions in mgL^-1.
