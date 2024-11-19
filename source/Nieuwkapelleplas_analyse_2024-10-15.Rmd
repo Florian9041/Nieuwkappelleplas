@@ -54,25 +54,16 @@ library(gridExtra)
 # import
 ```{r }
 # data met manuele toevoeging T.N (som van NO2, NO3, NH4 en _N)
-data <- read.csv2("./data/data_NKP.csv", sep = ",")
-data$ResultCalc <- as.numeric(data$ResultCalc)
+data <- read.csv2("./data/AC_NKP_ruwe_data_lang_2024-11-19_2.csv")
 data$FieldSamplingDate <- as.Date(data$FieldSamplingDate, format = "%d/%m/%Y")
-# remove 2 rowz of Na with LIMS-analysis name ICP_MET_OPT8300_W
+# remove 2 rows of Na with LIMS-analysis name ICP_MET_OPT8300_W
 data <- data[-(which(data$AquaComponent %in% "Na" & data$LIMSAnalysisName %in% "ICP_MET_OPT8300_W")),]
 
-#data_ZP <- filter(data, data$FieldSampleID == "WVLDIK0133_ZP")
-#data_R <- filter(data, data$FieldSampleID == "WVLDIK0133_R")
+# SD_veld met m als eenheid i.p.v. M
+data$label[data$AquaComponent == "SD_veld"] <- "SD_veld (m)"
+data$Unit[data$AquaComponent == "SD_veld"] <- "m"
+data$AquaUnit[data$AquaComponent == "SD_veld"] <- "m"
 ```
-
-# neem gemiddelde waarde tussen randzone en zonnepanelen-zone
-```{r}
-#combitabel <- bind_rows(data_ZP, data_R)
-#combitabel <- combitabel %>%
-#  group_by(FieldSamplingDate, AquaComponent, label) %>%
-#  summarise(combo = mean(ResultCalc)) %>%
-#  select(FieldSamplingDate, AquaComponent, combo, label)
-```
-
 
 # gemiddeldes, maximum, minimum per variabele per zone
 ```{r}
@@ -197,21 +188,21 @@ veldmetingen
 # democode: boxplots per variabele
 afzonderlijke figuren per variabele
 ```{r warning=FALSE}
-#Componenten <- unique(data$AquaComponent) 
+Componenten <- unique(data$AquaComponent) 
 
-#for (i in Componenten) { 
-#  data_figuur <- data %>% 
-#    filter(str_detect(AquaComponent, i)) 
-#  figuur <- ggplot(data_figuur, 
-#                   aes(x = FieldSampleID, y = ResultCalc)) + 
-#    geom_boxplot() +
-#    coord_flip() +
-#    labs(title = paste0(data_figuur$label))
-#  print(figuur)
-#  ggsave(figuur, 
-#         filename = paste0("./exports/plot_meetreeks_", "naam","_", i,".jpg"), 
-#         dpi = 200, width = 10, height = 10)
-#}
+for (i in Componenten) { 
+  data_figuur <- data %>% 
+    filter(str_detect(AquaComponent, i)) 
+  figuur <- ggplot(data_figuur, 
+                   aes(x = FieldSampleID, y = ResultCalc)) + 
+    geom_boxplot() +
+    coord_flip() +
+    labs(title = paste0(data_figuur$label))
+  print(figuur)
+  ggsave(figuur, 
+         filename = paste0("./exports/plot_meetreeks_", "naam","_", i,".jpg"), 
+         dpi = 200, width = 10, height = 10)
+}
 # geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
 ```
 
@@ -246,7 +237,7 @@ maak_plot(data, c("chl_a", "SD_veld", "ZS_550", "ZS_105"), "Helderheid waterkolo
 # afzonderlijke plots
 
 ## chlorofyl-a
-maak_plot_1var(data, "chl_a", "chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)")  
+maak_plot_1var(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)")  
   
 
 ## Secchi-diepte
@@ -309,13 +300,13 @@ maak_plot_1var(data, "TP", "Totale fosfor-concentratie (+ MKN norm zomerhalfjaar
   geom_hline(yintercept = MKN_TP, colour = "black", size = 1, linetype = "dashed")
 ### zomerhalfjaargemiddelde TP
 data %>%
-  filter(AquaComponent %in% "TP" & FieldSampleID == "WVLDIK0133_ZP") %>%
+  filter(AquaComponent %in% "TP") %>%
   filter(FieldSamplingDate >= ymd("2024-04-21") & FieldSamplingDate < ymd("2024-09-21")) %>%
   summarise(zomerhalfjaar = mean(ResultCalc))
 ### 0.17355 (R) & 0.167625 mg/L >> 0.055 mg/L MKN - NOK
 ```
 
-# fosfaat
+## fosfaat
 ```{r}
 maak_plot_1var(data, "PO4_P", "Fosfaat-P", yas = "Meetwaarde (mg P/L)")
 
@@ -382,7 +373,6 @@ maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", x
 
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_ZP"], probs = 0.1)
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.1)
-# p-10 = 8.83 (ZP) &  8.72  > 6 mg/L  - OK
 ```
 
 # temperatuur
@@ -418,7 +408,7 @@ plot1 <- anorg_N_R %>%
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Randzone") +
   xlab("Datum staalname") + 
-  ylab("Meetwaarde (mg N/L)")  + 
+  ylab("Meetwaarde")  + 
   scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,4.6, by = 0.2)) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_R") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
 plot1
 # zonnepanelen
@@ -428,7 +418,7 @@ plot2 <- anorg_N_ZP %>%
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   labs(title = "Zonnepanelen") +
   xlab("Datum staalname") + 
-  ylab("Meetwaarde (mg N/L)")  + 
+  ylab("Meetwaarde")  + 
   scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,4.6, by = 0.2)) + geom_line(data = data %>% filter(AquaComponent == "Si" & FieldSampleID == "WVLDIK0133_ZP") , aes(x = FieldSamplingDate, y = ResultCalc, linetype = FieldSampleID)) + scale_linetype_discrete(name = NULL, labels = "Silicium")
 plot2
 # gecombineerde figuur
@@ -467,8 +457,8 @@ maak_plot_1var(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "M
 # Elektrische geleidbaarheid
 maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed", size = 1)
 
-quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.9)
-## 90p = 923 (ZP) & 917 (R) µS/cm (> MKN 750 µS/cm 20°C ) NOK
+quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.9) # 916.6
+quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_ZP"], probs = 0.9) # 922.2
 
 ```
 
@@ -482,6 +472,28 @@ maak_plot_1var(data, "alkaliniteit", "Alkaliniteit", yas = "Meetwaarde (meq/L)")
 
 ## Functie Maucha-diagram (mymaucha)
 ```{r}
+#' This function draws Maucha diagram to represent the main ion composition of a water sample.
+#'
+#' @param x a vector or a matrix giving the concentrations of the ions in mgL^-1.
+#' The values must be ordered as K, Na, Ca, Mg, SO4, Cl, HCO3, CO3 (columns 1 to 8) but you may add other columns from 9 BUT CAREFUL if you add NON NUMERIC ONES (split the matrix into a numeric and a character componet in the plotting function)
+#' @param col a vector of R colors for each ion. Recycled if necessary.
+#' @param labels a logical stating whether labels are displayed.
+#' @param labels.col a vector of R colors for each label. Recycled if necessary.
+#' @param polygon a logical stating whether the hexadecagon is drawn.
+#' @param polygon.col a vector of R colors for the lines of each of the eight sector of the hexadecagon.
+#' @param polygon.border Cécile: colour of the line for each polygon, by default = green3
+#' @param polygon.cross Cécile: colour of the line for each polygon, by default = 1 (that is black)
+#' @param polygon.alpha Cécile: transparency for each polygon, by default = 1 (that is: not transparent)
+#' @param main a character string giving a main title for the diagrams.
+#' @param ... other arguments to be passed to the \code{\link[graphics]{plot.default}} function.
+#'
+#' @references Maucha, R. Hydrochemische Methoden in der Limnologie: mit besonderer Ber\"ucksichtigung
+#' der Verfahren von LW Winkler. Schweizerbart, 1932.
+#'
+#' @examples
+#' data(ionwaters)
+
+
 library(utils)
 mymaucha <- function(x, col = NULL,
                    labels = TRUE, labels.col = 1,
@@ -603,15 +615,16 @@ ionen <- data %>%
 
 # to wide format
 ionenwide <- pivot_wider(ionen, names_from = AquaComponent, values_from = NKP)
-
-data("ionwaters")
+ionenwide <- ionenwide %>% select(FieldSamplingDate, K, Na, Ca, Mg, SO4, Cl, HCO3_OEP, CO3)
 ```
 
 ## Maak diagrammen aan
 ```{r}
 ## CO3^2- = CO3
 ## HCO3- = HCO3_OEP
-mymaucha(ionenwide[2:9], main = "Ionensamenstelling Nieuwkappelleplas \n oktober 2023-augustus 2024")
+# converteer kolom met locatiecode naar row.names voor maucha-functie
+ionenwide <- ionenwide %>% remove_rownames %>% column_to_rownames(var = "FieldSamplingDate")
+mymaucha(ionenwide)
 ```
 
 
