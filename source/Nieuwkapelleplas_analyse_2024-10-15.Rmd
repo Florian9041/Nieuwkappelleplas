@@ -65,31 +65,6 @@ data$Unit[data$AquaComponent == "SD_veld"] <- "m"
 data$AquaUnit[data$AquaComponent == "SD_veld"] <- "m"
 ```
 
-# gemiddeldes, maximum, minimum per variabele per zone
-```{r}
-# voor zonnepaneelzone (_ZP)
-data_ZP_stat <- data_ZP %>%
-  group_by(AquaComponent) %>%
-  summarise(
-    gem = mean(ResultCalc),
-    min = min(ResultCalc),
-    max = max(ResultCalc),
-    p10 = quantile(ResultCalc, probs = 0.1),
-    p90 = quantile(ResultCalc, probs = 0.9)
-  )
-
-# voor randzone (_R)
-data_R_stat <- data_R %>%
-  group_by(AquaComponent) %>%
-  summarise(
-    gem = mean(ResultCalc),
-    min = min(ResultCalc),
-    max = max(ResultCalc),
-    p10 = quantile(ResultCalc, probs = 0.1),
-    p90 = quantile(ResultCalc, probs = 0.9)
-  )
-```
-
 # figuren
 
 per staalnamelocatie: alle gemeten variabelen met aanduiding van MKN richtwaarden (indien opgegeven) in figuur zetten
