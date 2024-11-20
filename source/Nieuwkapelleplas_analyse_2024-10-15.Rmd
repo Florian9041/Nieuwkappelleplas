@@ -74,7 +74,7 @@ label: als titel
 
 # vul hier MKN-normen in voor de te onderzoeken stof(fen)
 ```{r}
-## watertype Awe - Nieuwkappelleplas
+## watertype Awe - Nieuwkapelleplas
 MKN_O2conc = 6 # mg O2/L - 10p
 MKN_02verz = 120 # % - maximum
 
@@ -179,6 +179,28 @@ for (i in Componenten) {
          dpi = 200, width = 10, height = 10)
 }
 # geeft boxplots voor data per variabele, voor WVLDIK0133_ZP en WVLDIK0133_R
+```
+
+```{r}
+data %>%
+  filter(AquaComponent %in% "pH_veld") %>%
+  ggplot(aes(x = ResultCalc, y = FieldSampleID)) +
+  geom_boxplot()
+
+
+Componenten <- unique(data$AquaComponent)
+for (Variabele in Componenten) {
+  data_figuur <- data %>%
+    filter(AquaComponent %in% Variabele)
+  figuur <- ggplot(data_figuur,
+                   aes(x = ResultCalc, y = FieldSampleID)) +
+    geom_boxplot() +
+    labs(title = paste0("Nieuwkapelleplas variabele ",data_figuur$label)) +
+    ylab("Locatie") + xlab(paste0("Meetwaarde (", data_figuur$AquaUnit ,")"))
+  print(figuur)
+  ggsave(figuur,
+         filename = paste0("./exports/boxplots/", "NKP_",Variabele, "_bw",".jpg"))
+}
 ```
 
 # Zuurtegraad
@@ -694,7 +716,7 @@ ref_punten <- data.frame(
 ## plot IR-EGV diagram
 ```{r}
 p1 <- ggplot(ref_punten, aes(x = ec25_ref, y = ir_ref, label = name_ref)) +
-  geom_point(size = 2) + scale_x_log10() + xlab("EGV (µS/cm)") + ylab("IR (%)") + scale_y_continuous(breaks = seq(0,1, by = 0.1)) + ggtitle("IR-EGV diagram Nieuwkappelleplas") + geom_text(hjust = - 0.5, vjust = - 0.5)
+  geom_point(size = 2) + scale_x_log10() + xlab("EGV (µS/cm)") + ylab("IR (%)") + scale_y_continuous(breaks = seq(0,1, by = 0.1)) + ggtitle("IR-EGV diagram Nieuwkapelleplas") + geom_text(hjust = - 0.5, vjust = - 0.5)
 p1
 # voeg NKP toe
 p1 + geom_point(aes(x = mean_EGV, y = ionrat), colour = "red") + annotate("text", x = 1150, y = 0.36, label = "NKP", colour = "red") 
