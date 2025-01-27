@@ -48,6 +48,7 @@ library(ggplot2)
 library(dplyr)
 library(inbodb)
 library(gridExtra)
+library(scales)
 
 ```
 
@@ -94,7 +95,7 @@ MKN_pH_max = 8.5  # vul maximum pH in
 ```
 
 
-# democode functie 'maak_figuur' 
+# functie 'maak_figuur' 
 functie: maak figuur, laat deze zien en sla ze op
 ```{r}
 # genereer plot en sla op
@@ -103,7 +104,7 @@ save_plot <- function(dataset, component, naam, title = NULL, xas = NULL, yas = 
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
-    geom_line(size = 1) +
+    geom_line(size = 2) +
     geom_point() +
     labs(title = title) + xlab(xas) + ylab(yas) +
   scale_linetype_discrete(name = naam_linetype, labels = labels_linetype)
@@ -118,7 +119,7 @@ maak_plot <- function(dataset, component, title = NULL, xas = NULL, yas = NULL, 
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = label, linetype = FieldSampleID)) +
     scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
-    geom_line(size = 1) +
+    geom_line(size = 2) +
     geom_point() +
     labs(title = title) + xlab(xas) + ylab(yas) +
   scale_linetype_discrete(name = naam_linetype, labels = labels_linetype)
@@ -130,8 +131,8 @@ maak_plot_1var <- function(dataset, component, title = NULL, xas = "Datum staaln
   figuur <- dataset %>%
     filter(AquaComponent %in% component) %>%  
     ggplot(aes(x = FieldSamplingDate, y = ResultCalc, color = FieldSampleID)) +
-    scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") + # visualiseert data per maand in format maand-jaar
-    geom_line(size = 1) +
+    scale_x_date(date_breaks = "1 month", date_labels = "%m/%y") + # visualiseert data per maand in format maand-jaar
+    geom_line(size = 2) +
     geom_point() +
     labs(title = title) + xlab(xas) + ylab(yas) +
   scale_color_discrete(name = "Locatie", labels = c("Randzone", "Zonnepanelen"))
@@ -235,7 +236,13 @@ maak_plot(data, c("chl_a", "SD_veld", "ZS_550", "ZS_105"), "Helderheid waterkolo
 # afzonderlijke plots
 
 ## chlorofyl-a
-maak_plot_1var(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)")  
+maak_plot_1var(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname", yas = "Meetwaarde (µg/L)") + 
+  scale_y_continuous(breaks = pretty_breaks(n = 10, min.n = 10)) +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 16)  # Optional: Adjust axis text size
+  )
   
 
 ## Secchi-diepte
@@ -295,7 +302,14 @@ data %>%
 
 ## Totale fosfor
 maak_plot_1var(data, "TP", "Totale fosfor-concentratie (+ MKN norm zomerhalfjaargemiddelde)", xas = "Datum staalname", yas = "Meetwaarde (mg P/L)") +
-  geom_hline(yintercept = MKN_TP, colour = "black", size = 1, linetype = "dashed")
+  geom_hline(yintercept = MKN_TP, colour = "black", size = 1.5, linetype = "dashed") +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 16)  # Optional: Adjust axis text size
+  ) +
+  scale_y_continuous(breaks = pretty_breaks(n = 10, min.n = 10))
+  
 ### zomerhalfjaargemiddelde TP
 data %>%
   filter(AquaComponent %in% "TP") %>%
@@ -306,7 +320,13 @@ data %>%
 
 ## fosfaat
 ```{r}
-maak_plot_1var(data, "PO4_P", "Fosfaat-P", yas = "Meetwaarde (mg P/L)")
+maak_plot_1var(data, "PO4_P", "Fosfaat-P", yas = "Meetwaarde (mg P/L)") +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 16)  # Optional: Adjust axis text size
+  ) +
+  scale_y_continuous(breaks = pretty_breaks(n = 10, min.n = 10))
 
 ```
 
@@ -327,11 +347,18 @@ anorg_N_ZP$label <- factor(anorg_N_ZP$label, unique(anorg_N_ZP[order(anorg_N_ZP$
 plot1 <- anorg_N_R %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
   geom_area(position = "identity", alpha = 0.6) +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%m/%y") +
   labs(title = "Randzone") +
   xlab("Datum staalname") + 
   ylab("Meetwaarde (mg N/L)")  + 
-  scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,2, by = 0.1))
+  scale_fill_discrete("Variabelen") + scale_y_continuous(breaks = seq(0,2, by = 0.2)) +
+  theme(
+    plot.title = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_text(size = 16),
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 16)
+  )
 plot1
 
 
@@ -339,17 +366,23 @@ plot1
 plot2 <- anorg_N_ZP %>%
   ggplot(aes(x = FieldSamplingDate, y = ResultCalc, fill = label)) +
   geom_area(position = "identity", alpha = 0.6) +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%m/%y") +
   labs(title = "Zonnepanelen") +
-  xlab("Datum staalname") + ylab(NULL) + scale_y_continuous(breaks = seq(0,2, by = 0.1))
+  xlab("Datum staalname") + ylab(NULL) + scale_y_continuous(breaks = seq(0,2, by = 0.2)) +
+  theme(
+    plot.title = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_text(size = 16),
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 16)
+  )
 plot2
 
 # gecombineerde figuur
 plot3 <- ggarrange(plot1, plot2, common.legend = TRUE, legend = "bottom")
 
 annotate_figure(plot3, top = text_grob("Anorganische stikstof (N_anorg = NH4_N + NO3_N + NO2_N)", 
-               color = "black", face = "bold", size = 14))
-
+               color = "black", face = "bold", size = 16))
 ```
 
 
@@ -361,13 +394,25 @@ maak_plot(data, c("O2verz", "O2_veld"), "Zuurstofgehalte", xas = "Datum staalnam
 
 ## Zuurstofverzadiging
 maak_plot_1var(data, "O2verz", "Zuurstof-verzadiging (+ MKN norm maximum)", xas = "Datum staalname", yas = "Meetwaarde (%)") +
-  geom_hline(aes(yintercept= 120), colour= 'black', linetype = "dashed", size = 1)
+  scale_y_continuous(breaks = pretty_breaks(n = 10, min.n = 10)) +
+  geom_hline(aes(yintercept= 120), colour= 'black', linetype = "dashed", size = 1.5) +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 13)  # Optional: Adjust axis text size
+  )
 data %>% filter(AquaComponent %in% "O2verz") %>%
   summarise(maximum = max(ResultCalc))
 ### 161.9 % >> 120% MKN - NOK
 
 ## Zuurstofconcentratie
-maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed", size = 1)
+maak_plot_1var(data, "O2_veld", "Zuurstof-concentratie (+ 10-percentiel MKN)", xas = "Datum staalname", yas = "Meetwaarde (mg/L)")+ geom_hline(aes(yintercept= 6), colour= 'black', linetype = "dashed", size = 1.5) +
+  scale_y_continuous(breaks = pretty_breaks(n = 10, min.n = 10)) +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 13)  # Optional: Adjust axis text size
+  )
 
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_ZP"], probs = 0.1)
 quantile(data$ResultCalc[data$AquaComponent %in% "O2_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.1)
@@ -453,7 +498,13 @@ maak_plot_1var(data, "Na", "Natrium-concentratie", xas = "Datum Staalname", yas 
 maak_plot_1var(data, "sal_veld", "Saliniteit", xas = "Datum staalname", yas = "Meetwaarde (g/kg)")
 
 # Elektrische geleidbaarheid
-maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") + geom_hline(yintercept = 750, color = "black", linetype = "dashed", size = 1)
+maak_plot_1var(data, c("EGV25_veld"), "Elektrische geleidbaarheid (+ MKN 90-percentiel)", xas = "Datum staalname", yas = "Meetwaarde (µS/cm)") +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 13)  # Optional: Adjust axis text size
+  ) +
+  scale_y_continuous(breaks = seq(700,950,50)) + geom_hline(yintercept = 750, color = "black", linetype = "dashed", size = 1.5) + ylim(700,950)
 
 quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_R"], probs = 0.9) # 916.6
 quantile(data$ResultCalc[data$AquaComponent %in% "EGV25_veld" & data$FieldSampleID == "WVLDIK0133_ZP"], probs = 0.9) # 922.2
@@ -587,7 +638,7 @@ mymaucha <- function(x, col = NULL,
     }
     
     if(labels){
-      text(lab.pos.x, lab.pos.y, lab, col = labels.col)
+      text(lab.pos.x, lab.pos.y, lab, col = labels.col, cex = 1.5)
     }
   }
   par(mar = par.mar.0, mfrow = par.mfrow.0)
@@ -717,10 +768,15 @@ ref_punten <- data.frame(
 ## plot IR-EGV diagram
 ```{r}
 p1 <- ggplot(ref_punten, aes(x = ec25_ref, y = ir_ref, label = name_ref)) +
-  geom_point(size = 2) + scale_x_log10() + xlab("EGV (µS/cm)") + ylab("IR (%)") + scale_y_continuous(breaks = seq(0,1, by = 0.1)) + ggtitle("IR-EGV diagram Nieuwkapelleplas") + geom_text(hjust = - 0.5, vjust = - 0.5)
+  geom_point(size = 3) + scale_x_log10() + scale_y_continuous(breaks = seq(0,1, by = 0.1)) + geom_text(hjust = - 0.5, vjust = - 0.5, size = 5) +
+  theme(
+    plot.title = element_blank(),  # Remove the main title
+    axis.title = element_blank(),  # Remove axis titles
+    axis.text = element_text(size = 15)  # Optional: Adjust axis text size
+  )
 p1
 # voeg NKP toe
-p1 + geom_point(aes(x = mean_EGV, y = ionrat), colour = "red") + annotate("text", x = 1150, y = 0.36, label = "NKP", colour = "red") 
+p1 + geom_point(aes(x = mean_EGV, y = ionrat), colour = "red", size = 3) + annotate("text", x = 1150, y = 0.36, label = "NKP", colour = "red", size = 5) 
 ```
 
 ## IR-EGV van alle metingen
