@@ -242,7 +242,8 @@ maak_plot_1var(data, "chl_a", "Chlorofyl-a concentratie", xas = "Datum staalname
     plot.title = element_blank(),  # Remove the main title
     axis.title = element_blank(),  # Remove axis titles
     axis.text = element_text(size = 16)  # Optional: Adjust axis text size
-  )
+  ) +
+  geom_hline(yintercept = 10, size = 1.5, color = "black", linetype = "dashed")
   
 
 ## Secchi-diepte
